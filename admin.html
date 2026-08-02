@@ -23,7 +23,7 @@
     </div>
   </header>
 
-  <main class="max-w-4xl mx-auto p-4 mt-6">
+  <main class="max-w-4xl mx-auto p-4 mt-6 space-y-6">
     <!-- Login Screen -->
     <div id="login-section" class="max-w-xs mx-auto bg-zinc-900 border border-zinc-800 p-6 rounded-2xl text-center space-y-4 shadow-2xl">
       <i data-lucide="lock" class="w-10 h-10 mx-auto text-zinc-400"></i>
@@ -37,14 +37,13 @@
     </div>
 
     <!-- Dashboard -->
-    <div id="dashboard-section" class="hidden space-y-8">
+    <div id="dashboard-section" class="hidden space-y-6">
       
-      <!-- Настройки за графики и дезинфекция -->
+      <!-- Настройки за график и дезинфекция -->
       <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
         <h3 class="text-md font-bold text-white uppercase tracking-wider flex items-center gap-2">
           <i data-lucide="settings" class="w-5 h-5 text-zinc-400"></i> Настройки на График & Дезинфекция
         </h3>
-        
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label class="block text-xs text-zinc-400 mb-1">Начало на деня</label>
@@ -59,7 +58,7 @@
             <input type="number" id="service-duration" value="30" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-sm text-white" />
           </div>
           <div>
-            <label class="block text-xs text-zinc-400 mb-1">Дезинфекция / Почистване (мин)</label>
+            <label class="block text-xs text-zinc-400 mb-1">Дезинфекция (мин)</label>
             <input type="number" id="clean-duration" value="15" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-sm text-white" />
           </div>
           <div>
@@ -71,28 +70,46 @@
             <input type="time" id="break-end" value="14:00" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-sm text-white" />
           </div>
         </div>
-
         <button onclick="saveScheduleSettings()" class="bg-white text-black font-bold py-2 px-6 rounded-xl text-xs hover:bg-zinc-200 transition">
           Запази новия график
         </button>
       </div>
 
-      <!-- График за деня -->
+      <!-- Управление на почивни дни -->
+      <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
+        <h3 class="text-md font-bold text-white uppercase tracking-wider flex items-center gap-2">
+          <i data-lucide="calendar-off" class="w-5 h-5 text-zinc-400"></i> Почивни дни (Избор кога не работиш)
+        </h3>
+        <div class="flex flex-col sm:flex-row gap-3 items-center">
+          <input type="date" id="day-off-input" class="bg-zinc-950 border border-zinc-800 rounded-lg py-2 px-4 text-sm text-white focus:outline-none" />
+          <button onclick="addDayOff()" class="bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500 hover:text-white font-bold py-2 px-4 rounded-lg text-xs transition">
+            Маркирай като почивен ден
+          </button>
+        </div>
+        <div id="days-off-list" class="flex flex-wrap gap-2 pt-2"></div>
+      </div>
+
+      <!-- Преглед на запазени часове -->
       <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
         <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div>
-            <label class="block text-xs uppercase font-semibold text-zinc-400 mb-1">Дата за преглед</label>
-            <input type="date" id="admin-date-select" onchange="loadBookings()"
-              class="bg-zinc-950 border border-zinc-800 rounded-lg py-2 px-4 text-sm text-white focus:outline-none focus:border-zinc-500" />
+          <div class="flex items-center gap-3">
+            <div>
+              <label class="block text-xs uppercase font-semibold text-zinc-400 mb-1">Дата за преглед</label>
+              <input type="date" id="admin-date-select" onchange="loadBookingsForDate()"
+                class="bg-zinc-950 border border-zinc-800 rounded-lg py-2 px-4 text-sm text-white focus:outline-none" />
+            </div>
+            <button onclick="loadAllBookings()" class="mt-5 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold py-2 px-4 rounded-lg text-xs transition border border-zinc-700">
+              Виж всички часове досега
+            </button>
           </div>
           <div class="text-right">
-            <p class="text-xs text-zinc-500">Запазени часове</p>
+            <p class="text-xs text-zinc-500">Общо намерени</p>
             <p id="total-count" class="text-2xl font-black text-white">0</p>
           </div>
         </div>
 
         <div id="bookings-list" class="divide-y divide-zinc-800 border-t border-zinc-800 pt-4">
-          <div class="p-8 text-center text-zinc-500 text-sm">Изберете дата.</div>
+          <div class="p-8 text-center text-zinc-500 text-sm">Изберете дата или натиснете „Виж всички часове досега“.</div>
         </div>
       </div>
 
@@ -101,7 +118,7 @@
 
   <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyCDniksfxmA5GU04nLzrmumt2AFp4_LxMA",
+      apiKey: "AIzaSyCDniksfXmA5GU04nLzrmumt2AFp4_LxMA",
       authDomain: "sgforge-barber-studio.firebaseapp.com",
       projectId: "sgforge-barber-studio",
       storageBucket: "sgforge-barber-studio.firebasestorage.app",
@@ -121,7 +138,8 @@
         document.getElementById('logout-btn-container').classList.remove('hidden');
         document.getElementById('admin-date-select').value = new Date().toISOString().split('T')[0];
         loadSettings();
-        loadBookings();
+        loadDaysOff();
+        loadBookingsForDate();
       } else {
         document.getElementById('error-msg').classList.remove('hidden');
       }
@@ -155,48 +173,123 @@
         cleanDuration: parseInt(document.getElementById('clean-duration').value),
         breakStart: document.getElementById('break-start').value,
         breakEnd: document.getElementById('break-end').value,
-      }).then(() => alert('Настройките са запазени успешно!'));
+      }).then(() => alert('Графикът е запазен успешно!'));
     }
 
-    function loadBookings() {
-      const selectedDate = document.getElementById('admin-date-select').value;
-      const listContainer = document.getElementById('bookings-list');
-      if (!selectedDate) return;
-
-      db.collection('bookings').where('date', '==', selectedDate).get().then(snapshot => {
-        document.getElementById('total-count').innerText = snapshot.size;
-        if (snapshot.empty) {
-          listContainer.innerHTML = '<div class="p-8 text-center text-zinc-500 text-sm">Няма запазени часове.</div>';
-          return;
+    function loadDaysOff() {
+      db.collection('settings').doc('daysOff').get().then(doc => {
+        const container = document.getElementById('days-off-list');
+        container.innerHTML = '';
+        if (doc.exists && doc.data().dates) {
+          const dates = doc.data().dates;
+          if (dates.length === 0) {
+            container.innerHTML = '<span class="text-xs text-zinc-500">Няма зададени почивни дни.</span>';
+            return;
+          }
+          dates.forEach(date => {
+            const badge = document.createElement('div');
+            badge.className = 'bg-zinc-950 border border-zinc-800 px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs text-zinc-300';
+            badge.innerHTML = `<span>${date}</span> <button onclick="removeDayOff('${date}')" class="text-red-400 hover:text-red-300 font-bold">×</button>`;
+            container.appendChild(badge);
+          });
         }
-
-        let items = [];
-        snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
-        items.sort((a, b) => a.time.localeCompare(b.time));
-
-        listContainer.innerHTML = '';
-        items.forEach(item => {
-          const row = document.createElement('div');
-          row.className = 'py-3 flex justify-between items-center';
-          row.innerHTML = `
-            <div class="flex items-center gap-3">
-              <span class="bg-white text-black font-black text-xs px-2.5 py-1 rounded-md">${item.time}</span>
-              <div>
-                <p class="text-sm font-bold text-white">${item.clientName}</p>
-                <p class="text-xs text-zinc-400">${item.clientEmail || item.clientPhone || ''}</p>
-              </div>
-            </div>
-            <button onclick="deleteBooking('${item.id}')" class="text-xs bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1 rounded-lg transition">Откажи</button>
-          `;
-          listContainer.appendChild(row);
-        });
-        lucide.createIcons();
       });
     }
 
+    function addDayOff() {
+      const dateVal = document.getElementById('day-off-input').value;
+      if (!dateVal) return alert('Избери дата!');
+      db.collection('settings').doc('daysOff').get().then(doc => {
+        let dates = doc.exists && doc.data().dates ? doc.data().dates : [];
+        if (!dates.includes(dateVal)) {
+          dates.push(dateVal);
+          db.collection('settings').doc('daysOff').set({ dates }).then(() => {
+            loadDaysOff();
+            alert('Почивният ден е добавен!');
+          });
+        }
+      });
+    }
+
+    function removeDayOff(dateToRemove) {
+      db.collection('settings').doc('daysOff').get().then(doc => {
+        if (doc.exists && doc.data().dates) {
+          let dates = doc.data().dates.filter(d => d !== dateToRemove);
+          db.collection('settings').doc('daysOff').set({ dates }).then(() => loadDaysOff());
+        }
+      });
+    }
+
+    function loadBookingsForDate() {
+      const selectedDate = document.getElementById('admin-date-select').value;
+      if (!selectedDate) return;
+      db.collection('bookings').where('date', '==', selectedDate).get().then(snapshot => {
+        renderBookingsList(snapshot, true);
+      });
+    }
+
+    function loadAllBookings() {
+      db.collection('bookings').orderBy('date').orderBy('time').get().then(snapshot => {
+        renderBookingsList(snapshot, false);
+      });
+    }
+
+    function renderBookingsList(snapshot, showDateBadge) {
+      const listContainer = document.getElementById('bookings-list');
+      document.getElementById('total-count').innerText = snapshot.size;
+      
+      if (snapshot.empty) {
+        listContainer.innerHTML = '<div class="p-8 text-center text-zinc-500 text-sm">Няма намерени резервации.</div>';
+        return;
+      }
+
+      let items = [];
+      snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+      items.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+
+      listContainer.innerHTML = '';
+      items.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3';
+        row.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="flex flex-col items-center bg-white text-black font-black text-xs px-2.5 py-1 rounded-md min-w-[55px]">
+              <span>${item.time}</span>
+              ${!showDateBadge ? `<span class="text-[9px] text-zinc-600 font-normal">${item.date}</span>` : ''}
+            </div>
+            <div>
+              <p class="text-sm font-bold text-white">${item.clientName}</p>
+              <p class="text-xs text-zinc-400">${item.clientPhone || item.clientEmail || 'Няма контакт'}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 self-end sm:self-auto">
+            <button onclick="rescheduleBooking('${item.id}', '${item.clientName}')" class="text-xs bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white px-3 py-1 rounded-lg transition border border-zinc-700">Пренасочи</button>
+            <button onclick="deleteBooking('${item.id}')" class="text-xs bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1 rounded-lg transition">Откажи</button>
+          </div>
+        `;
+        listContainer.appendChild(row);
+      });
+      lucide.createIcons();
+    }
+
+    function rescheduleBooking(id, clientName) {
+      const newDate = prompt(`Пренасочване за ${clientName}.\nВъведи нова дата (YYYY-MM-DD):`, new Date().toISOString().split('T')[0]);
+      if (!newDate) return;
+      const newTime = prompt(`Въведи нов час (HH:MM):`, "10:00");
+      if (!newTime) return;
+
+      db.collection('bookings').doc(id).update({
+        date: newDate,
+        time: newTime
+      }).then(() => {
+        alert('Часът е пренасочен успешно!');
+        loadAllBookings();
+      }).catch(err => alert('Грешка: ' + err.message));
+    }
+
     function deleteBooking(id) {
-      if (confirm('Сигурни ли сте?')) {
-        db.collection('bookings').doc(id).delete().then(() => loadBookings());
+      if (confirm('Сигурни ли сте, че искате да откажете този час?')) {
+        db.collection('bookings').doc(id).delete().then(() => loadAllBookings());
       }
     }
 
