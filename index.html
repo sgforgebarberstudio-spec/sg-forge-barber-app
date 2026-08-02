@@ -1,119 +1,152 @@
 <!DOCTYPE html>
-<html lang="bg">
+<html lang="bg" class="h-full">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SG Forge Barber Studio - Резервации</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>SG Forge Barber Studio</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    /* Скриване на скролбарите за чисто приложение */
+    ::-webkit-scrollbar { display: none; }
+    body { -webkit-tap-highlight-color: transparent; }
+  </style>
 </head>
-<body class="bg-black text-gray-100 min-h-screen flex flex-col justify-between font-sans">
+<body class="bg-black text-gray-100 h-full flex flex-col justify-between font-sans selection:bg-zinc-800">
 
-  <header class="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-50 px-4 py-6 text-center">
-    <h1 class="text-3xl font-black tracking-wider uppercase text-white">SG FORGE</h1>
-    <p class="text-xs tracking-[0.25em] text-zinc-400 mt-1 uppercase">Barber Studio</p>
+  <!-- Mobile Header -->
+  <header class="border-b border-zinc-900 bg-black/80 backdrop-blur-xl sticky top-0 z-50 px-5 py-4 flex justify-between items-center">
+    <div>
+      <h1 class="text-lg font-black tracking-widest uppercase text-white">SG FORGE</h1>
+      <p class="text-[10px] tracking-[0.3em] text-zinc-500 uppercase">Barber Studio</p>
+    </div>
+    <div id="header-user-actions" class="hidden flex items-center gap-2">
+      <button onclick="openMyBookings()" class="text-xs bg-zinc-900 active:scale-95 text-zinc-300 px-3 py-1.5 rounded-full border border-zinc-800 transition flex items-center gap-1.5 shadow-sm">
+        <i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-400"></i> Часове
+      </button>
+    </div>
   </header>
 
-  <main class="max-w-md w-full mx-auto p-4 flex-1 flex flex-col justify-center">
+  <main class="max-w-md w-full mx-auto px-4 py-6 flex-1 flex flex-col justify-center">
     
     <!-- СТЪПКА 1: Вход -->
-    <div id="step-1" class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-4">
-      <div class="text-center mb-4">
-        <h2 class="text-xl font-bold text-white">Вход в профила</h2>
-        <p class="text-xs text-zinc-400 mt-1">Влезте за бързо запазване и преглед на часове</p>
+    <div id="step-1" class="hidden bg-zinc-950 border border-zinc-900 rounded-3xl p-6 shadow-2xl space-y-5 animate-fade-in">
+      <div class="text-center space-y-1">
+        <div class="w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-2xl mx-auto flex items-center justify-center mb-3 shadow-inner">
+          <i data-lucide="scissors" class="w-6 h-6 text-white"></i>
+        </div>
+        <h2 class="text-xl font-bold text-white tracking-tight">Добре дошли</h2>
+        <p class="text-xs text-zinc-400">Влезте за запазване и управление на часове</p>
       </div>
 
-      <button onclick="loginWithGoogle()" class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition text-sm">
+      <button onclick="loginWithGoogle()" class="w-full bg-zinc-900 hover:bg-zinc-800 active:scale-[0.98] border border-zinc-800 text-white font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2.5 transition text-xs shadow-lg">
         <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.2 9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/><path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15s.7 5.3 1.9 7.7l3.7-2.9c-.4-.7-.8-1.5-.8-2.3z"/><path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.2-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/></svg>
         Продължи с Google
       </button>
 
-      <div class="relative flex py-2 items-center">
-        <div class="flex-grow border-t border-zinc-800"></div>
-        <span class="flex-shrink mx-4 text-xs text-zinc-500 uppercase">Или с Имейл</span>
-        <div class="flex-grow border-t border-zinc-800"></div>
+      <div class="relative flex py-1 items-center">
+        <div class="flex-grow border-t border-zinc-900"></div>
+        <span class="flex-shrink mx-3 text-[10px] text-zinc-600 uppercase tracking-widest font-bold">Или с имейл</span>
+        <div class="flex-grow border-t border-zinc-900"></div>
       </div>
 
-      <form id="email-auth-form" class="space-y-3">
-        <input type="email" id="auth-email" required placeholder="Имейл адрес"
-          class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none" />
-        <input type="password" id="auth-password" required placeholder="Парола"
-          class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none" />
-        <input type="tel" id="auth-phone" placeholder="Телефонен номер"
-          class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none" />
+      <form class="space-y-3">
+        <input type="email" id="auth-email" placeholder="Имейл адрес"
+          class="w-full bg-black border border-zinc-900 rounded-2xl py-3 px-4 text-xs text-white focus:outline-none focus:border-zinc-700 transition" />
+        <input type="password" id="auth-password" placeholder="Парола"
+          class="w-full bg-black border border-zinc-900 rounded-2xl py-3 px-4 text-xs text-white focus:outline-none focus:border-zinc-700 transition" />
+        <input type="tel" id="auth-phone" placeholder="Телефонен номер (напр. 089xxxxxxx)"
+          class="w-full bg-black border border-zinc-900 rounded-2xl py-3 px-4 text-xs text-white focus:outline-none focus:border-zinc-700 transition" />
         
-        <div class="flex gap-2">
-          <button type="button" onclick="loginWithEmail()" class="w-1/2 bg-white text-black font-bold py-2.5 rounded-xl hover:bg-zinc-200 text-xs">Вход</button>
-          <button type="button" onclick="registerWithEmail()" class="w-1/2 bg-zinc-800 text-white font-bold py-2.5 rounded-xl hover:bg-zinc-700 text-xs">Регистрация</button>
+        <div class="grid grid-cols-2 gap-2.5 pt-1">
+          <button type="button" onclick="loginWithEmail()" class="w-full bg-white text-black font-bold py-3 rounded-2xl active:scale-[0.98] hover:bg-zinc-200 transition text-xs shadow-md">Вход</button>
+          <button type="button" onclick="registerWithEmail()" class="w-full bg-zinc-900 text-zinc-300 font-bold py-3 rounded-2xl active:scale-[0.98] hover:bg-zinc-800 transition text-xs border border-zinc-800">Регистрация</button>
         </div>
       </form>
     </div>
 
     <!-- СТЪПКА 2: Календар и Запазване на час -->
-    <div id="step-2" class="hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-6">
-      <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
-        <div>
-          <p class="text-xs text-zinc-400">Профил</p>
-          <p id="user-display-name" class="text-sm font-bold text-white"></p>
-        </div>
+    <div id="step-2" class="hidden bg-zinc-950 border border-zinc-900 rounded-3xl p-6 shadow-2xl space-y-5 animate-fade-in">
+      
+      <!-- Профилен хедър в стъпката -->
+      <div class="flex justify-between items-center bg-black/40 border border-zinc-900/80 p-3.5 rounded-2xl">
         <div class="flex items-center gap-3">
-          <button onclick="openMyBookings()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-white px-3 py-1.5 rounded-lg border border-zinc-700 transition">Моите часове</button>
-          <button onclick="firebase.auth().signOut()" class="text-xs text-zinc-500 underline">Изход</button>
+          <div class="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xs font-bold text-white" id="user-initials">S</div>
+          <div>
+            <p class="text-[10px] uppercase text-zinc-500 font-semibold">Профил</p>
+            <p id="user-display-name" class="text-xs font-bold text-white truncate max-w-[160px]"></p>
+          </div>
         </div>
+        <button onclick="firebase.auth().signOut()" class="text-[11px] text-zinc-500 hover:text-white transition px-2 py-1">Изход</button>
       </div>
 
+      <!-- Избор на дата -->
       <div>
-        <label class="block text-xs font-semibold uppercase text-zinc-400 mb-2">Изберете дата от календара</label>
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-2.5">Избери дата</label>
         <div id="calendar-grid" class="grid grid-cols-7 gap-1.5 text-center text-xs"></div>
       </div>
 
-      <div id="slots-container" class="hidden">
-        <label class="block text-xs font-semibold uppercase text-zinc-400 mb-2">Свободни часове</label>
-        <div id="slots-grid" class="grid grid-cols-3 gap-2"></div>
+      <!-- Свободни часове -->
+      <div id="slots-container" class="hidden space-y-2.5">
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400">Свободни часове</label>
+        <div id="slots-grid" class="grid grid-cols-3 gap-2 max-h-44 overflow-y-auto pr-1"></div>
       </div>
 
-      <!-- Поле за телефон задължително преди запазване -->
+      <!-- Телефон за връзка -->
       <div>
-        <label class="block text-xs font-semibold uppercase text-zinc-400 mb-1">Телефон за връзка</label>
-        <input type="tel" id="booking-phone" placeholder="089xxxxxxx" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-sm text-white focus:outline-none" />
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Телефон за връзка</label>
+        <input type="tel" id="booking-phone" placeholder="089xxxxxxx" class="w-full bg-black border border-zinc-900 rounded-2xl py-3 px-4 text-xs text-white focus:outline-none focus:border-zinc-700 transition" />
       </div>
 
       <button id="confirm-btn" disabled onclick="saveBooking()"
-        class="w-full bg-white text-black font-bold py-3 rounded-xl disabled:opacity-30 hover:bg-zinc-200 transition text-sm">
+        class="w-full bg-white text-black font-bold py-3.5 rounded-2xl active:scale-[0.98] disabled:opacity-30 disabled:active:scale-100 hover:bg-zinc-200 transition text-xs shadow-xl">
         Запази час
       </button>
     </div>
 
-    <!-- СТЪПКА ЗА МОИТЕ РЕЗЕРВАЦИИ (Профил на клиента) -->
-    <div id="step-my-bookings" class="hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-4">
-      <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
-        <h2 class="text-lg font-bold text-white">Моите запазени часове</h2>
-        <button onclick="goToStep(2)" class="text-xs bg-zinc-800 text-white px-3 py-1.5 rounded-lg border border-zinc-700">Назад към календара</button>
+    <!-- СТЪПКА ЗА МОИТЕ РЕЗЕРВАЦИИ -->
+    <div id="step-my-bookings" class="hidden bg-zinc-950 border border-zinc-900 rounded-3xl p-6 shadow-2xl space-y-4 animate-fade-in">
+      <div class="flex justify-between items-center border-b border-zinc-900 pb-3">
+        <h2 class="text-sm font-bold text-white uppercase tracking-wider">Моите запазени часове</h2>
+        <button onclick="goToStep(2)" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-zinc-300 px-3 py-1.5 rounded-xl border border-zinc-800 transition">Назад</button>
       </div>
-      <div id="my-bookings-list" class="divide-y divide-zinc-800 max-h-64 overflow-y-auto">
-        <p class="text-xs text-zinc-500 text-center py-4">Зареждане...</p>
+      <div id="my-bookings-list" class="divide-y divide-zinc-900 max-h-72 overflow-y-auto">
+        <p class="text-xs text-zinc-600 text-center py-6">Зареждане...</p>
       </div>
     </div>
 
     <!-- СТЪПКА 3: Потвърждение -->
-    <div id="step-3" class="hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl text-center space-y-4">
-      <i data-lucide="check-circle" class="w-16 h-16 text-emerald-500 mx-auto"></i>
-      <h2 class="text-2xl font-bold text-white">Часът е запазен!</h2>
-      <p class="text-sm text-zinc-400">
-        Очакваме ви на <strong id="confirm-date" class="text-white"></strong> в <strong id="confirm-time" class="text-white"></strong> ч.
-      </p>
-      <button onclick="goToStep(2)" class="w-full bg-zinc-800 text-white font-semibold py-2.5 rounded-xl hover:bg-zinc-700 transition text-sm">
+    <div id="step-3" class="hidden bg-zinc-950 border border-zinc-900 rounded-3xl p-8 shadow-2xl text-center space-y-5 animate-fade-in">
+      <div class="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto text-emerald-400 shadow-inner">
+        <i data-lucide="check" class="w-8 h-8"></i>
+      </div>
+      <div class="space-y-1">
+        <h2 class="text-xl font-bold text-white">Часът е запазен!</h2>
+        <p class="text-xs text-zinc-400">
+          Очакваме ви на <strong id="confirm-date" class="text-white"></strong> в <strong id="confirm-time" class="text-white"></strong> ч.
+        </p>
+      </div>
+      <button onclick="goToStep(2)" class="w-full bg-zinc-900 text-white font-semibold py-3 rounded-2xl active:scale-[0.98] hover:bg-zinc-800 transition text-xs border border-zinc-800 shadow-lg">
         Нова резервация
       </button>
     </div>
 
   </main>
 
-  <footer class="border-t border-zinc-900 py-4 text-center text-xs text-zinc-600">
-    © 2026 SG Forge Barber Studio.
+  <footer class="border-t border-zinc-900/80 py-4 text-center text-[10px] text-zinc-600 uppercase tracking-widest">
+    SG Forge Barber Studio © 2026
   </footer>
 
   <script>
@@ -140,16 +173,18 @@
     auth.onAuthStateChanged(user => {
       if (user) {
         currentUser = user;
-        document.getElementById('user-display-name').innerText = user.displayName || user.email;
-        if(document.getElementById('auth-phone') && document.getElementById('auth-phone').value) {
-          document.getElementById('booking-phone').value = document.getElementById('auth-phone').value;
-        }
+        const name = user.displayName || user.email.split('@')[0];
+        document.getElementById('user-display-name').innerText = name;
+        document.getElementById('user-initials').innerText = name.charAt(0).toUpperCase();
+        document.getElementById('header-user-actions').classList.remove('hidden');
+        
         loadAppData().then(() => {
           renderCalendar();
           goToStep(2);
         });
       } else {
         currentUser = null;
+        document.getElementById('header-user-actions').classList.add('hidden');
         goToStep(1);
       }
     });
@@ -165,9 +200,7 @@
       const phone = document.getElementById('auth-phone').value;
       if (!email || !pass) return alert("Въведете имейл и парола");
       auth.createUserWithEmailAndPassword(email, pass).then(cred => {
-        if(phone) {
-          document.getElementById('booking-phone').value = phone;
-        }
+        if(phone) document.getElementById('booking-phone').value = phone;
       }).catch(err => alert(err.message));
     }
 
@@ -205,12 +238,12 @@
         const isSelected = selectedDate === dateStr;
 
         if (isOff) {
-          btn.className = 'p-2 rounded-xl border bg-zinc-950/20 text-zinc-700 border-zinc-900 cursor-not-allowed flex flex-col items-center';
-          btn.innerHTML = `<span class="text-[10px] uppercase font-semibold text-zinc-700">Почивка</span><span class="text-sm font-bold line-through">${dayNum}</span>`;
+          btn.className = 'p-2.5 rounded-2xl border bg-black/20 text-zinc-700 border-zinc-900 cursor-not-allowed flex flex-col items-center opacity-40';
+          btn.innerHTML = `<span class="text-[9px] uppercase font-bold text-zinc-600">Почивка</span><span class="text-xs font-bold line-through">${dayNum}</span>`;
           btn.disabled = true;
         } else {
-          btn.className = `p-2 rounded-xl border flex flex-col items-center transition ${isSelected ? 'bg-white text-black border-white' : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-600'}`;
-          btn.innerHTML = `<span class="text-[10px] uppercase font-semibold text-zinc-500">${dayName}</span><span class="text-sm font-bold">${dayNum}</span>`;
+          btn.className = `p-2.5 rounded-2xl border flex flex-col items-center transition active:scale-95 ${isSelected ? 'bg-white text-black border-white shadow-lg' : 'bg-black text-zinc-300 border-zinc-900 hover:border-zinc-800'}`;
+          btn.innerHTML = `<span class="text-[9px] uppercase font-bold ${isSelected ? 'text-zinc-500' : 'text-zinc-600'}">${dayName}</span><span class="text-xs font-bold">${dayNum}</span>`;
           btn.onclick = () => {
             selectedDate = dateStr;
             renderCalendar();
@@ -248,7 +281,7 @@
     function fetchAndRenderSlots() {
       document.getElementById('slots-container').classList.remove('hidden');
       const grid = document.getElementById('slots-grid');
-      grid.innerHTML = '<p class="col-span-3 text-xs text-zinc-500 text-center py-4">Проверка...</p>';
+      grid.innerHTML = '<p class="col-span-3 text-[11px] text-zinc-600 text-center py-3">Зареждане на часове...</p>';
 
       db.collection('bookings').where('date', '==', selectedDate).get().then(snapshot => {
         const booked = snapshot.docs.map(doc => doc.data().time);
@@ -260,12 +293,12 @@
           const btn = document.createElement('button');
 
           if (isBooked) {
-            btn.className = 'py-2 text-xs font-bold rounded-lg border bg-zinc-950/40 text-zinc-600 border-zinc-900 cursor-not-allowed line-through';
+            btn.className = 'py-2.5 text-xs font-bold rounded-xl border bg-black/40 text-zinc-700 border-zinc-900 cursor-not-allowed line-through';
             btn.innerText = slot;
             btn.disabled = true;
           } else {
             const isSelected = selectedTime === slot;
-            btn.className = `py-2 text-xs font-bold rounded-lg border transition ${isSelected ? 'bg-white text-black border-white' : 'bg-zinc-950 text-zinc-300 border-zinc-800'}`;
+            btn.className = `py-2.5 text-xs font-bold rounded-xl border transition active:scale-95 ${isSelected ? 'bg-white text-black border-white shadow-md' : 'bg-black text-zinc-300 border-zinc-900'}`;
             btn.innerText = slot;
             btn.onclick = () => {
               selectedTime = slot;
@@ -300,12 +333,12 @@
     function openMyBookings() {
       goToStep('my-bookings');
       const container = document.getElementById('my-bookings-list');
-      container.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Зареждане...</p>';
+      container.innerHTML = '<p class="text-xs text-zinc-600 text-center py-6">Зареждане...</p>';
 
       db.collection('bookings').where('clientUid', '==', currentUser.uid).get().then(snapshot => {
         container.innerHTML = '';
         if (snapshot.empty) {
-          container.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Нямате активни резервации.</p>';
+          container.innerHTML = '<p class="text-xs text-zinc-600 text-center py-6">Нямате активни резервации.</p>';
           return;
         }
         let items = [];
@@ -314,12 +347,13 @@
 
         items.forEach(item => {
           const row = document.createElement('div');
-          row.className = 'py-3 flex justify-between items-center text-xs';
+          row.className = 'py-3.5 flex justify-between items-center text-xs';
           row.innerHTML = `
             <div>
-              <p class="font-bold text-white text-sm">${item.date} в ${item.time}</p>
-              <p class="text-zinc-400">Статус: <span class="text-emerald-400">Активна резервация</span></p>
+              <p class="font-bold text-white text-sm">${item.date} в <span class="text-emerald-400">${item.time}</span></p>
+              <p class="text-zinc-500 text-[11px] mt-0.5">Телефон: ${item.clientPhone}</p>
             </div>
+            <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full text-[10px] font-bold">Активен</span>
           `;
           container.appendChild(row);
         });
