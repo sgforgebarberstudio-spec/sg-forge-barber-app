@@ -4,69 +4,80 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SG Forge Barber Studio - Резервации</title>
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 </head>
-<body class="bg-black text-gray-100 min-h-screen flex flex-col justify-between font-sans selection:bg-zinc-700">
+<body class="bg-black text-gray-100 min-h-screen flex flex-col justify-between font-sans">
 
-  <!-- Header -->
   <header class="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-50 px-4 py-6 text-center">
     <h1 class="text-3xl font-black tracking-wider uppercase text-white">SG FORGE</h1>
     <p class="text-xs tracking-[0.25em] text-zinc-400 mt-1 uppercase">Barber Studio</p>
-    <p class="text-[10px] tracking-widest text-zinc-500 mt-2 italic">SHARP. CONFIDENT. UNSTOPPABLE.</p>
   </header>
 
-  <!-- Main Content -->
   <main class="max-w-md w-full mx-auto p-4 flex-1 flex flex-col justify-center">
     
     <!-- СТЪПКА 1: Вход -->
-    <div id="step-1" class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl">
-      <div class="text-center mb-6">
-        <i data-lucide="user" class="w-10 h-10 mx-auto text-zinc-300 mb-2"></i>
-        <h2 class="text-xl font-bold text-white">Вход / Регистрация</h2>
-        <p class="text-xs text-zinc-400 mt-1">Въведете вашите данни за бързо запазване</p>
+    <div id="step-1" class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-4">
+      <div class="text-center mb-4">
+        <h2 class="text-xl font-bold text-white">Вход в профила</h2>
+        <p class="text-xs text-zinc-400 mt-1">Влезте за бързо запазване на час</p>
       </div>
 
-      <form id="login-form" class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold uppercase text-zinc-400 mb-1">Вашето Име</label>
-          <input type="text" id="client-name" required placeholder="Иван Иванов"
-            class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:border-zinc-500 transition" />
+      <!-- Google Sign In -->
+      <button onclick="loginWithGoogle()" class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition text-sm">
+        <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.2 9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/><path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15s.7 5.3 1.9 7.7l3.7-2.9c-.4-.7-.8-1.5-.8-2.3z"/><path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.2-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/></svg>
+        Продължи с Google
+      </button>
+
+      <div class="relative flex py-2 items-center">
+        <div class="flex-grow border-t border-zinc-800"></div>
+        <span class="flex-shrink mx-4 text-xs text-zinc-500 uppercase">Или с Имейл</span>
+        <div class="flex-grow border-t border-zinc-800"></div>
+      </div>
+
+      <!-- Email/Password Form -->
+      <form id="email-auth-form" class="space-y-3">
+        <input type="email" id="auth-email" required placeholder="Имейл адрес"
+          class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:border-zinc-500" />
+        <input type="password" id="auth-password" required placeholder="Парола"
+          class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:border-zinc-500" />
+        <input type="tel" id="auth-phone" placeholder="Телефонен номер"
+          class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:border-zinc-500" />
+        
+        <div class="flex gap-2">
+          <button type="button" onclick="loginWithEmail()" class="w-1/2 bg-white text-black font-bold py-2.5 rounded-xl hover:bg-zinc-200 text-xs">
+            Вход
+          </button>
+          <button type="button" onclick="registerWithEmail()" class="w-1/2 bg-zinc-800 text-white font-bold py-2.5 rounded-xl hover:bg-zinc-700 text-xs">
+            Регистрация
+          </button>
         </div>
-        <div>
-          <label class="block text-xs font-semibold uppercase text-zinc-400 mb-1">Телефонен Номер</label>
-          <input type="tel" id="client-phone" required placeholder="08X XXX XXXX"
-            class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:border-zinc-500 transition" />
-        </div>
-        <button type="submit" class="w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-zinc-200 transition text-sm">
-          Продължи към часовете
-        </button>
       </form>
     </div>
 
-    <!-- СТЪПКА 2: Часове -->
+    <!-- СТЪПКА 2: Календар и Часове -->
     <div id="step-2" class="hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-6">
-      <div class="flex justify-between items-center border-b border-zinc-800 pb-4">
+      <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
         <div>
-          <p class="text-xs text-zinc-400">Клиент</p>
-          <p id="display-user-name" class="text-sm font-bold text-white"></p>
+          <p class="text-xs text-zinc-400">Профил</p>
+          <p id="user-display-name" class="text-sm font-bold text-white"></p>
         </div>
-        <button onclick="goToStep(1)" class="text-xs text-zinc-500 underline hover:text-zinc-300">Смяна</button>
+        <button onclick="firebase.auth().signOut()" class="text-xs text-zinc-500 underline">Изход</button>
       </div>
 
+      <!-- Визуален Календар -->
       <div>
-        <label class="block text-xs font-semibold uppercase text-zinc-400 mb-2">Изберете дата</label>
-        <input type="date" id="booking-date"
-          class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:border-zinc-500 transition" />
+        <label class="block text-xs font-semibold uppercase text-zinc-400 mb-2">Изберете дата от календара</label>
+        <div id="calendar-grid" class="grid grid-cols-7 gap-1.5 text-center text-xs"></div>
       </div>
 
+      <!-- Свободни Часове -->
       <div id="slots-container" class="hidden">
-        <label class="block text-xs font-semibold uppercase text-zinc-400 mb-2">Свободни часове</label>
+        <label class="block text-xs font-semibold uppercase text-zinc-400 mb-2">Свободни часове (вкл. дезинфекция)</label>
         <div id="slots-grid" class="grid grid-cols-3 gap-2"></div>
       </div>
 
@@ -79,22 +90,16 @@
     <!-- СТЪПКА 3: Потвърждение -->
     <div id="step-3" class="hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl text-center space-y-4">
       <i data-lucide="check-circle" class="w-16 h-16 text-emerald-500 mx-auto"></i>
-      <h2 class="text-2xl font-bold text-white">Успешна резервация!</h2>
+      <h2 class="text-2xl font-bold text-white">Часът е запазен!</h2>
       <p class="text-sm text-zinc-400">
-        Часът ви е запазен успешно за <br />
-        <strong id="confirm-date" class="text-white"></strong> в <strong id="confirm-time" class="text-white"></strong> ч.
+        Очакваме ви на <strong id="confirm-date" class="text-white"></strong> в <strong id="confirm-time" class="text-white"></strong> ч.
       </p>
       <button onclick="goToStep(2)" class="w-full bg-zinc-800 text-white font-semibold py-2.5 rounded-xl hover:bg-zinc-700 transition text-sm">
-        Запази друг час
+        Нова резервация
       </button>
     </div>
 
   </main>
-
-  <!-- Footer -->
-  <footer class="border-t border-zinc-900 py-4 text-center text-xs text-zinc-600">
-    © 2026 SG Forge Barber Studio.
-  </footer>
 
   <script>
     const firebaseConfig = {
@@ -108,106 +113,159 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const auth = firebase.auth();
 
-    let currentUser = { name: '', phone: '' };
+    let currentUser = null;
     let selectedDate = '';
     let selectedTime = '';
+    let scheduleSettings = { startTime: "09:00", endTime: "19:00", serviceDuration: 30, cleanDuration: 15, breakStart: "13:00", breakEnd: "14:00" };
 
-    const availableSlots = ['10:00', '10:45', '11:30', '13:00', '13:45', '14:30', '15:15', '16:00', '17:00'];
-
-    document.getElementById('login-form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      currentUser.name = document.getElementById('client-name').value;
-      currentUser.phone = document.getElementById('client-phone').value;
-      document.getElementById('display-user-name').innerText = currentUser.name;
-      goToStep(2);
-    });
-
-    document.getElementById('booking-date').addEventListener('change', (e) => {
-      selectedDate = e.target.value;
-      selectedTime = '';
-      document.getElementById('confirm-btn').disabled = true;
-
-      if (selectedDate) {
-        document.getElementById('slots-container').classList.remove('hidden');
-        fetchAndRenderSlots();
+    // Следене за логнат потребител
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUser = user;
+        document.getElementById('user-display-name').innerText = user.displayName || user.email;
+        loadScheduleSettings().then(() => {
+          renderCalendar();
+          goToStep(2);
+        });
+      } else {
+        currentUser = null;
+        goToStep(1);
       }
     });
 
-    function fetchAndRenderSlots() {
-      const grid = document.getElementById('slots-grid');
-      grid.innerHTML = '<p class="col-span-3 text-xs text-zinc-500 text-center py-4">Проверка за свободни часове...</p>';
-
-      db.collection('bookings')
-        .where('date', '==', selectedDate)
-        .get()
-        .then(snapshot => {
-          const bookedSlots = [];
-          snapshot.forEach(doc => {
-            bookedSlots.push(doc.data().time);
-          });
-          renderSlots(bookedSlots);
-        })
-        .catch(err => {
-          grid.innerHTML = '<p class="col-span-3 text-xs text-red-500 text-center py-4">Грешка при зареждане на часовете.</p>';
-        });
+    function loginWithGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch(err => alert(err.message));
     }
 
-    function renderSlots(bookedSlots = []) {
-      const grid = document.getElementById('slots-grid');
+    function registerWithEmail() {
+      const email = document.getElementById('auth-email').value;
+      const pass = document.getElementById('auth-password').value;
+      if (!email || !pass) return alert("Въведете имейл и парола");
+      auth.createUserWithEmailAndPassword(email, pass).catch(err => alert(err.message));
+    }
+
+    function loginWithEmail() {
+      const email = document.getElementById('auth-email').value;
+      const pass = document.getElementById('auth-password').value;
+      if (!email || !pass) return alert("Въведете имейл и парола");
+      auth.signInWithEmailAndPassword(email, pass).catch(err => alert(err.message));
+    }
+
+    function loadScheduleSettings() {
+      return db.collection('settings').doc('schedule').get().then(doc => {
+        if (doc.exists) scheduleSettings = doc.data();
+      });
+    }
+
+    function renderCalendar() {
+      const grid = document.getElementById('calendar-grid');
       grid.innerHTML = '';
+      const today = new Date();
+      
+      // Показваме следващите 14 дни
+      for (let i = 0; i < 14; i++) {
+        const d = new Date();
+        d.setDate(today.getDate() + i);
+        const dateStr = d.toISOString().split('T')[0];
+        const dayName = d.toLocaleDateString('bg-BG', { weekday: 'short' });
+        const dayNum = d.getDate();
 
-      availableSlots.forEach(slot => {
-        const isBooked = bookedSlots.includes(slot);
         const btn = document.createElement('button');
-
-        if (isBooked) {
-          btn.className = 'py-2 text-xs font-bold rounded-lg border bg-zinc-950/40 text-zinc-600 border-zinc-900 cursor-not-allowed line-through';
-          btn.innerText = slot;
-          btn.disabled = true;
-        } else {
-          const isSelected = selectedTime === slot;
-          btn.className = `py-2 text-xs font-bold rounded-lg border transition ${isSelected ? 'bg-white text-black border-white' : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-600'}`;
-          btn.innerText = slot;
-          btn.onclick = () => {
-            selectedTime = slot;
-            renderSlots(bookedSlots);
-            document.getElementById('confirm-btn').disabled = false;
-          };
-        }
+        const isSelected = selectedDate === dateStr;
+        btn.className = `p-2 rounded-xl border flex flex-col items-center transition ${isSelected ? 'bg-white text-black border-white' : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-600'}`;
+        btn.innerHTML = `<span class="text-[10px] uppercase font-semibold text-zinc-500">${dayName}</span><span class="text-sm font-bold">${dayNum}</span>`;
+        btn.onclick = () => {
+          selectedDate = dateStr;
+          renderCalendar();
+          fetchAndRenderSlots();
+        };
         grid.appendChild(btn);
+      }
+    }
+
+    function generateTimeSlots() {
+      const slots = [];
+      const totalSlotTime = scheduleSettings.serviceDuration + scheduleSettings.cleanDuration; // Общо времетраене с дезинфекцията
+      
+      let [h, m] = scheduleSettings.startTime.split(':').map(Number);
+      let [endH, endM] = scheduleSettings.endTime.split(':').map(Number);
+      let currentMin = h * 60 + m;
+      const endMin = endH * 60 + endM;
+
+      let [bStartH, bStartM] = scheduleSettings.breakStart.split(':').map(Number);
+      let [bEndH, bEndM] = scheduleSettings.breakEnd.split(':').map(Number);
+      const breakStartMin = bStartH * 60 + bStartM;
+      const breakEndMin = bEndH * 60 + bEndM;
+
+      while (currentMin + scheduleSettings.serviceDuration <= endMin) {
+        // Проверка за обедна почивка
+        if (!(currentMin >= breakStartMin && currentMin < breakEndMin)) {
+          const slotH = String(Math.floor(currentMin / 60)).padStart(2, '0');
+          const slotM = String(currentMin % 60).padStart(2, '0');
+          slots.push(`${slotH}:${slotM}`);
+        }
+        currentMin += totalSlotTime; // Автоматично добавя времето за дезинфекция към следващия час
+      }
+      return slots;
+    }
+
+    function fetchAndRenderSlots() {
+      document.getElementById('slots-container').classList.remove('hidden');
+      const grid = document.getElementById('slots-grid');
+      grid.innerHTML = '<p class="col-span-3 text-xs text-zinc-500 text-center py-4">Проверка...</p>';
+
+      db.collection('bookings').where('date', '==', selectedDate).get().then(snapshot => {
+        const booked = snapshot.docs.map(doc => doc.data().time);
+        const slots = generateTimeSlots();
+
+        grid.innerHTML = '';
+        slots.forEach(slot => {
+          const isBooked = booked.includes(slot);
+          const btn = document.createElement('button');
+
+          if (isBooked) {
+            btn.className = 'py-2 text-xs font-bold rounded-lg border bg-zinc-950/40 text-zinc-600 border-zinc-900 cursor-not-allowed line-through';
+            btn.innerText = slot;
+            btn.disabled = true;
+          } else {
+            const isSelected = selectedTime === slot;
+            btn.className = `py-2 text-xs font-bold rounded-lg border transition ${isSelected ? 'bg-white text-black border-white' : 'bg-zinc-950 text-zinc-300 border-zinc-800'}`;
+            btn.innerText = slot;
+            btn.onclick = () => {
+              selectedTime = slot;
+              fetchAndRenderSlots();
+              document.getElementById('confirm-btn').disabled = false;
+            };
+          }
+          grid.appendChild(btn);
+        });
       });
     }
 
     function saveBooking() {
-      if (!selectedTime || !selectedDate) return;
-
-      document.getElementById('confirm-btn').disabled = true;
-      document.getElementById('confirm-btn').innerText = 'Запазване...';
-
+      const phone = document.getElementById('auth-phone') ? document.getElementById('auth-phone').value : '';
       db.collection('bookings').add({
-        clientName: currentUser.name,
-        clientPhone: currentUser.phone,
+        clientName: currentUser.displayName || currentUser.email,
+        clientEmail: currentUser.email,
+        clientPhone: phone,
         date: selectedDate,
         time: selectedTime,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       }).then(() => {
         document.getElementById('confirm-date').innerText = selectedDate;
         document.getElementById('confirm-time').innerText = selectedTime;
-        document.getElementById('confirm-btn').innerText = 'Запази час';
         goToStep(3);
-      }).catch(err => {
-        alert("Грешка при запазването: " + err.message);
-        document.getElementById('confirm-btn').innerText = 'Запази час';
-        document.getElementById('confirm-btn').disabled = false;
       });
     }
 
-    function goToStep(stepNumber) {
+    function goToStep(step) {
       document.getElementById('step-1').classList.add('hidden');
       document.getElementById('step-2').classList.add('hidden');
       document.getElementById('step-3').classList.add('hidden');
-      document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
+      document.getElementById(`step-${step}`).classList.remove('hidden');
     }
 
     lucide.createIcons();
