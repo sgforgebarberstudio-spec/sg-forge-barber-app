@@ -23,7 +23,7 @@
     <div id="step-1" class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-4">
       <div class="text-center mb-4">
         <h2 class="text-xl font-bold text-white">Вход в профила</h2>
-        <p class="text-xs text-zinc-400 mt-1">Влезте за бързо запазване на час</p>
+        <p class="text-xs text-zinc-400 mt-1">Влезте за бързо запазване и преглед на часове</p>
       </div>
 
       <button onclick="loginWithGoogle()" class="w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition text-sm">
@@ -52,14 +52,17 @@
       </form>
     </div>
 
-    <!-- СТЪПКА 2: Календар и Часове -->
+    <!-- СТЪПКА 2: Календар и Запазване на час -->
     <div id="step-2" class="hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-6">
       <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
         <div>
           <p class="text-xs text-zinc-400">Профил</p>
           <p id="user-display-name" class="text-sm font-bold text-white"></p>
         </div>
-        <button onclick="firebase.auth().signOut()" class="text-xs text-zinc-500 underline">Изход</button>
+        <div class="flex items-center gap-3">
+          <button onclick="openMyBookings()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-white px-3 py-1.5 rounded-lg border border-zinc-700 transition">Моите часове</button>
+          <button onclick="firebase.auth().signOut()" class="text-xs text-zinc-500 underline">Изход</button>
+        </div>
       </div>
 
       <div>
@@ -72,10 +75,27 @@
         <div id="slots-grid" class="grid grid-cols-3 gap-2"></div>
       </div>
 
+      <!-- Поле за телефон задължително преди запазване -->
+      <div>
+        <label class="block text-xs font-semibold uppercase text-zinc-400 mb-1">Телефон за връзка</label>
+        <input type="tel" id="booking-phone" placeholder="089xxxxxxx" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-sm text-white focus:outline-none" />
+      </div>
+
       <button id="confirm-btn" disabled onclick="saveBooking()"
         class="w-full bg-white text-black font-bold py-3 rounded-xl disabled:opacity-30 hover:bg-zinc-200 transition text-sm">
         Запази час
       </button>
+    </div>
+
+    <!-- СТЪПКА ЗА МОИТЕ РЕЗЕРВАЦИИ (Профил на клиента) -->
+    <div id="step-my-bookings" class="hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+        <h2 class="text-lg font-bold text-white">Моите запазени часове</h2>
+        <button onclick="goToStep(2)" class="text-xs bg-zinc-800 text-white px-3 py-1.5 rounded-lg border border-zinc-700">Назад към календара</button>
+      </div>
+      <div id="my-bookings-list" class="divide-y divide-zinc-800 max-h-64 overflow-y-auto">
+        <p class="text-xs text-zinc-500 text-center py-4">Зареждане...</p>
+      </div>
     </div>
 
     <!-- СТЪПКА 3: Потвърждение -->
@@ -121,6 +141,9 @@
       if (user) {
         currentUser = user;
         document.getElementById('user-display-name').innerText = user.displayName || user.email;
+        if(document.getElementById('auth-phone') && document.getElementById('auth-phone').value) {
+          document.getElementById('booking-phone').value = document.getElementById('auth-phone').value;
+        }
         loadAppData().then(() => {
           renderCalendar();
           goToStep(2);
@@ -139,8 +162,13 @@
     function registerWithEmail() {
       const email = document.getElementById('auth-email').value;
       const pass = document.getElementById('auth-password').value;
+      const phone = document.getElementById('auth-phone').value;
       if (!email || !pass) return alert("Въведете имейл и парола");
-      auth.createUserWithEmailAndPassword(email, pass).catch(err => alert(err.message));
+      auth.createUserWithEmailAndPassword(email, pass).then(cred => {
+        if(phone) {
+          document.getElementById('booking-phone').value = phone;
+        }
+      }).catch(err => alert(err.message));
     }
 
     function loginWithEmail() {
@@ -251,9 +279,12 @@
     }
 
     function saveBooking() {
-      const phone = document.getElementById('auth-phone') ? document.getElementById('auth-phone').value : '';
+      const phone = document.getElementById('booking-phone').value;
+      if (!phone) return alert('Моля въведете телефонен номер!');
+
       db.collection('bookings').add({
-        clientName: currentUser.displayName || currentUser.email,
+        clientUid: currentUser.uid,
+        clientName: currentUser.displayName || currentUser.email.split('@')[0],
         clientEmail: currentUser.email,
         clientPhone: phone,
         date: selectedDate,
@@ -266,11 +297,46 @@
       });
     }
 
+    function openMyBookings() {
+      goToStep('my-bookings');
+      const container = document.getElementById('my-bookings-list');
+      container.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Зареждане...</p>';
+
+      db.collection('bookings').where('clientUid', '==', currentUser.uid).get().then(snapshot => {
+        container.innerHTML = '';
+        if (snapshot.empty) {
+          container.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Нямате активни резервации.</p>';
+          return;
+        }
+        let items = [];
+        snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+        items.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+
+        items.forEach(item => {
+          const row = document.createElement('div');
+          row.className = 'py-3 flex justify-between items-center text-xs';
+          row.innerHTML = `
+            <div>
+              <p class="font-bold text-white text-sm">${item.date} в ${item.time}</p>
+              <p class="text-zinc-400">Статус: <span class="text-emerald-400">Активна резервация</span></p>
+            </div>
+          `;
+          container.appendChild(row);
+        });
+      });
+    }
+
     function goToStep(step) {
       document.getElementById('step-1').classList.add('hidden');
       document.getElementById('step-2').classList.add('hidden');
       document.getElementById('step-3').classList.add('hidden');
-      document.getElementById(`step-${step}`).classList.remove('hidden');
+      document.getElementById('step-my-bookings').classList.add('hidden');
+      
+      if(step === 'my-bookings') {
+        document.getElementById('step-my-bookings').classList.remove('hidden');
+      } else {
+        document.getElementById(`step-${step}`).classList.remove('hidden');
+      }
     }
 
     lucide.createIcons();
