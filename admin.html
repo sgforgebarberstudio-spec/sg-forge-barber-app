@@ -2,7 +2,7 @@
 <html lang="bg">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>SG Forge - Админ Панел</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -11,7 +11,7 @@
 </head>
 <body class="bg-black text-gray-100 min-h-screen font-sans pb-12">
 
-  <header class="border-b border-zinc-800 bg-zinc-950 p-4 flex justify-between items-center max-w-4xl mx-auto">
+  <header class="border-b border-zinc-800 bg-zinc-950 p-4 flex justify-between items-center max-w-4xl mx-auto sticky top-0 z-50">
     <div>
       <h1 class="text-xl font-black uppercase text-white tracking-wider">SG FORGE</h1>
       <p class="text-xs text-zinc-400">Административен Панел</p>
@@ -89,7 +89,7 @@
         <div id="days-off-list" class="flex flex-wrap gap-2 pt-2"></div>
       </div>
 
-      <!-- Всички запазени часове (Без дата за преглед) -->
+      <!-- Всички запазени часове (Оптимизирано) -->
       <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
         <div class="flex justify-between items-center">
           <h3 class="text-md font-bold text-white uppercase tracking-wider flex items-center gap-2">
@@ -212,9 +212,12 @@
       });
     }
 
+    // Оптимизирано зареждане без нужди от сложни индекси в базата данни
     function loadAllBookings() {
-      db.collection('bookings').orderBy('date').orderBy('time').get().then(snapshot => {
-        const listContainer = document.getElementById('bookings-list');
+      const listContainer = document.getElementById('bookings-list');
+      listContainer.innerHTML = '<div class="p-4 text-center text-zinc-500 text-xs">Зареждане на резервации...</div>';
+
+      db.collection('bookings').get().then(snapshot => {
         document.getElementById('total-count').innerText = snapshot.size;
         
         if (snapshot.empty) {
@@ -225,6 +228,9 @@
         let items = [];
         snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
 
+        // Сортиране по дата и час директно в браузъра (супер бързо)
+        items.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+
         listContainer.innerHTML = '';
         items.forEach(item => {
           const row = document.createElement('div');
@@ -232,22 +238,24 @@
           row.innerHTML = `
             <div class="flex items-center gap-3">
               <div class="flex flex-col items-center bg-zinc-950 border border-zinc-800 text-white font-black text-xs px-3 py-1.5 rounded-lg min-w-[90px]">
-                <span class="text-emerald-400">${item.date}</span>
-                <span class="text-sm">${item.time}</span>
+                <span class="text-emerald-400">${item.date || 'Няма дата'}</span>
+                <span class="text-sm">${item.time || ''}</span>
               </div>
               <div>
-                <p class="text-sm font-bold text-white">${item.clientName}</p>
+                <p class="text-sm font-bold text-white">${item.clientName || 'Клиент'}</p>
                 <p class="text-xs text-zinc-400">${item.clientPhone || item.clientEmail || 'Няма контакт'}</p>
               </div>
             </div>
             <div class="flex items-center gap-2 self-end sm:self-auto">
-              <button onclick="rescheduleBooking('${item.id}', '${item.clientName}')" class="text-xs bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white px-3 py-1.5 rounded-lg transition border border-zinc-700">Пренасочи</button>
+              <button onclick="rescheduleBooking('${item.id}', '${item.clientName || 'Клиент'}')" class="text-xs bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white px-3 py-1.5 rounded-lg transition border border-zinc-700">Пренасочи</button>
               <button onclick="deleteBooking('${item.id}')" class="text-xs bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition">Откажи</button>
             </div>
           `;
           listContainer.appendChild(row);
         });
         lucide.createIcons();
+      }).catch(err => {
+        listContainer.innerHTML = `<div class="p-6 text-center text-red-400 text-xs">Грешка при зареждане: ${err.message}</div>`;
       });
     }
 
