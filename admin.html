@@ -89,27 +89,20 @@
         <div id="days-off-list" class="flex flex-wrap gap-2 pt-2"></div>
       </div>
 
-      <!-- Преглед на запазени часове -->
+      <!-- Всички запазени часове (Без дата за преглед) -->
       <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
-        <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div class="flex items-center gap-3">
-            <div>
-              <label class="block text-xs uppercase font-semibold text-zinc-400 mb-1">Дата за преглед</label>
-              <input type="date" id="admin-date-select" onchange="loadBookingsForDate()"
-                class="bg-zinc-950 border border-zinc-800 rounded-lg py-2 px-4 text-sm text-white focus:outline-none" />
-            </div>
-            <button onclick="loadAllBookings()" class="mt-5 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold py-2 px-4 rounded-lg text-xs transition border border-zinc-700">
-              Виж всички часове досега
-            </button>
-          </div>
+        <div class="flex justify-between items-center">
+          <h3 class="text-md font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <i data-lucide="calendar" class="w-5 h-5 text-zinc-400"></i> Всички запазени часове
+          </h3>
           <div class="text-right">
-            <p class="text-xs text-zinc-500">Общо намерени</p>
+            <p class="text-xs text-zinc-500">Общо резервации</p>
             <p id="total-count" class="text-2xl font-black text-white">0</p>
           </div>
         </div>
 
         <div id="bookings-list" class="divide-y divide-zinc-800 border-t border-zinc-800 pt-4">
-          <div class="p-8 text-center text-zinc-500 text-sm">Изберете дата или натиснете „Виж всички часове досега“.</div>
+          <div class="p-8 text-center text-zinc-500 text-sm">Зареждане на резервации...</div>
         </div>
       </div>
 
@@ -136,10 +129,9 @@
         document.getElementById('login-section').classList.add('hidden');
         document.getElementById('dashboard-section').classList.remove('hidden');
         document.getElementById('logout-btn-container').classList.remove('hidden');
-        document.getElementById('admin-date-select').value = new Date().toISOString().split('T')[0];
         loadSettings();
         loadDaysOff();
-        loadBookingsForDate();
+        loadAllBookings();
       } else {
         document.getElementById('error-msg').classList.remove('hidden');
       }
@@ -220,56 +212,43 @@
       });
     }
 
-    function loadBookingsForDate() {
-      const selectedDate = document.getElementById('admin-date-select').value;
-      if (!selectedDate) return;
-      db.collection('bookings').where('date', '==', selectedDate).get().then(snapshot => {
-        renderBookingsList(snapshot, true);
-      });
-    }
-
     function loadAllBookings() {
       db.collection('bookings').orderBy('date').orderBy('time').get().then(snapshot => {
-        renderBookingsList(snapshot, false);
-      });
-    }
+        const listContainer = document.getElementById('bookings-list');
+        document.getElementById('total-count').innerText = snapshot.size;
+        
+        if (snapshot.empty) {
+          listContainer.innerHTML = '<div class="p-8 text-center text-zinc-500 text-sm">Няма намерени резервации.</div>';
+          return;
+        }
 
-    function renderBookingsList(snapshot, showDateBadge) {
-      const listContainer = document.getElementById('bookings-list');
-      document.getElementById('total-count').innerText = snapshot.size;
-      
-      if (snapshot.empty) {
-        listContainer.innerHTML = '<div class="p-8 text-center text-zinc-500 text-sm">Няма намерени резервации.</div>';
-        return;
-      }
+        let items = [];
+        snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
 
-      let items = [];
-      snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
-      items.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
-
-      listContainer.innerHTML = '';
-      items.forEach(item => {
-        const row = document.createElement('div');
-        row.className = 'py-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3';
-        row.innerHTML = `
-          <div class="flex items-center gap-3">
-            <div class="flex flex-col items-center bg-white text-black font-black text-xs px-2.5 py-1 rounded-md min-w-[55px]">
-              <span>${item.time}</span>
-              ${!showDateBadge ? `<span class="text-[9px] text-zinc-600 font-normal">${item.date}</span>` : ''}
+        listContainer.innerHTML = '';
+        items.forEach(item => {
+          const row = document.createElement('div');
+          row.className = 'py-3.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3';
+          row.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="flex flex-col items-center bg-zinc-950 border border-zinc-800 text-white font-black text-xs px-3 py-1.5 rounded-lg min-w-[90px]">
+                <span class="text-emerald-400">${item.date}</span>
+                <span class="text-sm">${item.time}</span>
+              </div>
+              <div>
+                <p class="text-sm font-bold text-white">${item.clientName}</p>
+                <p class="text-xs text-zinc-400">${item.clientPhone || item.clientEmail || 'Няма контакт'}</p>
+              </div>
             </div>
-            <div>
-              <p class="text-sm font-bold text-white">${item.clientName}</p>
-              <p class="text-xs text-zinc-400">${item.clientPhone || item.clientEmail || 'Няма контакт'}</p>
+            <div class="flex items-center gap-2 self-end sm:self-auto">
+              <button onclick="rescheduleBooking('${item.id}', '${item.clientName}')" class="text-xs bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white px-3 py-1.5 rounded-lg transition border border-zinc-700">Пренасочи</button>
+              <button onclick="deleteBooking('${item.id}')" class="text-xs bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition">Откажи</button>
             </div>
-          </div>
-          <div class="flex items-center gap-2 self-end sm:self-auto">
-            <button onclick="rescheduleBooking('${item.id}', '${item.clientName}')" class="text-xs bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white px-3 py-1 rounded-lg transition border border-zinc-700">Пренасочи</button>
-            <button onclick="deleteBooking('${item.id}')" class="text-xs bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1 rounded-lg transition">Откажи</button>
-          </div>
-        `;
-        listContainer.appendChild(row);
+          `;
+          listContainer.appendChild(row);
+        });
+        lucide.createIcons();
       });
-      lucide.createIcons();
     }
 
     function rescheduleBooking(id, clientName) {
