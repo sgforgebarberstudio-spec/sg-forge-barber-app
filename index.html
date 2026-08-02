@@ -97,7 +97,6 @@
   </footer>
 
   <script>
-    // Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyCDniksfXmA5GUB4nLzrmumt2AFp4_LxMA",
       authDomain: "sgforge-barber-studio.firebaseapp.com",
@@ -126,29 +125,66 @@
 
     document.getElementById('booking-date').addEventListener('change', (e) => {
       selectedDate = e.target.value;
+      selectedTime = '';
+      document.getElementById('confirm-btn').disabled = true;
+
       if (selectedDate) {
         document.getElementById('slots-container').classList.remove('hidden');
-        renderSlots();
+        fetchAndRenderSlots();
       }
     });
 
-    function renderSlots() {
+    function fetchAndRenderSlots() {
+      const grid = document.getElementById('slots-grid');
+      grid.innerHTML = '<p class="col-span-3 text-xs text-zinc-500 text-center py-4">Проверка за свободни часове...</p>';
+
+      db.collection('bookings')
+        .where('date', '==', selectedDate)
+        .get()
+        .then(snapshot => {
+          const bookedSlots = [];
+          snapshot.forEach(doc => {
+            bookedSlots.push(doc.data().time);
+          });
+          renderSlots(bookedSlots);
+        })
+        .catch(err => {
+          grid.innerHTML = '<p class="col-span-3 text-xs text-red-500 text-center py-4">Грешка при зареждане на часовете.</p>';
+        });
+    }
+
+    function renderSlots(bookedSlots = []) {
       const grid = document.getElementById('slots-grid');
       grid.innerHTML = '';
+
       availableSlots.forEach(slot => {
+        const isBooked = bookedSlots.includes(slot);
         const btn = document.createElement('button');
-        btn.className = `py-2 text-xs font-bold rounded-lg border transition ${selectedTime === slot ? 'bg-white text-black border-white' : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-600'}`;
-        btn.innerText = slot;
-        btn.onclick = () => {
-          selectedTime = slot;
-          renderSlots();
-          document.getElementById('confirm-btn').disabled = false;
-        };
+
+        if (isBooked) {
+          btn.className = 'py-2 text-xs font-bold rounded-lg border bg-zinc-950/40 text-zinc-600 border-zinc-900 cursor-not-allowed line-through';
+          btn.innerText = slot;
+          btn.disabled = true;
+        } else {
+          const isSelected = selectedTime === slot;
+          btn.className = `py-2 text-xs font-bold rounded-lg border transition ${isSelected ? 'bg-white text-black border-white' : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-600'}`;
+          btn.innerText = slot;
+          btn.onclick = () => {
+            selectedTime = slot;
+            renderSlots(bookedSlots);
+            document.getElementById('confirm-btn').disabled = false;
+          };
+        }
         grid.appendChild(btn);
       });
     }
 
     function saveBooking() {
+      if (!selectedTime || !selectedDate) return;
+
+      document.getElementById('confirm-btn').disabled = true;
+      document.getElementById('confirm-btn').innerText = 'Запазване...';
+
       db.collection('bookings').add({
         clientName: currentUser.name,
         clientPhone: currentUser.phone,
@@ -158,8 +194,13 @@
       }).then(() => {
         document.getElementById('confirm-date').innerText = selectedDate;
         document.getElementById('confirm-time').innerText = selectedTime;
+        document.getElementById('confirm-btn').innerText = 'Запази час';
         goToStep(3);
-      }).catch(err => alert("Грешка при запазването: " + err.message));
+      }).catch(err => {
+        alert("Грешка при запазването: " + err.message);
+        document.getElementById('confirm-btn').innerText = 'Запази час';
+        document.getElementById('confirm-btn').disabled = false;
+      });
     }
 
     function goToStep(stepNumber) {
