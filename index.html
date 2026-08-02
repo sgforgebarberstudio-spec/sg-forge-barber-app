@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SG Forge Barber Studio - Резервации</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-black text-gray-100 min-h-screen flex flex-col justify-between font-sans selection:bg-zinc-700">
+
+  <!-- Header -->
+  <header class="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-50 px-4 py-6 text-center">
+    <h1 class="text-3xl font-black tracking-wider uppercase text-white">SG FORGE</h1>
+    <p class="text-xs tracking-[0.25em] text-zinc-400 mt-1 uppercase">Barber Studio</p>
+    <p class="text-[10px] tracking-widest text-zinc-500 mt-2 italic">SHARP. CONFIDENT. UNSTOPPABLE.</p>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-md w-full mx-auto p-4 flex-1 flex flex-col justify-center">
+    
+    <!-- СТЪПКА 1: Вход -->
+    <div id="step-1" class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl">
+      <div class="text-center mb-6">
+        <i data-lucide="user" class="w-10 h-10 mx-auto text-zinc-300 mb-2"></i>
+        <h2 class="text-xl font-bold text-white">Вход / Регистрация</h2>
+        <p class="text-xs text-zinc-400 mt-1">Въведете вашите данни за бързо запазване</p>
+      </div>
+
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-zinc-400 mb-1">Вашето Име</label>
+          <input type="text" id="client-name" required placeholder="Иван Иванов"
+            class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:border-zinc-500 transition" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-zinc-400 mb-1">Телефонен Номер</label>
+          <input type="tel" id="client-phone" required placeholder="08X XXX XXXX"
+            class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:border-zinc-500 transition" />
+        </div>
+        <button type="submit" class="w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-zinc-200 transition text-sm">
+          Продължи към часовете
+        </button>
+      </form>
+    </div>
+
+    <!-- СТЪПКА 2: Часове -->
+    <div id="step-2" class="hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-6">
+      <div class="flex justify-between items-center border-b border-zinc-800 pb-4">
+        <div>
+          <p class="text-xs text-zinc-400">Клиент</p>
+          <p id="display-user-name" class="text-sm font-bold text-white"></p>
+        </div>
+        <button onclick="goToStep(1)" class="text-xs text-zinc-500 underline hover:text-zinc-300">Смяна</button>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold uppercase text-zinc-400 mb-2">Изберете дата</label>
+        <input type="date" id="booking-date"
+          class="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm text-white focus:outline-none focus:border-zinc-500 transition" />
+      </div>
+
+      <div id="slots-container" class="hidden">
+        <label class="block text-xs font-semibold uppercase text-zinc-400 mb-2">Свободни часове</label>
+        <div id="slots-grid" class="grid grid-cols-3 gap-2"></div>
+      </div>
+
+      <button id="confirm-btn" disabled onclick="saveBooking()"
+        class="w-full bg-white text-black font-bold py-3 rounded-xl disabled:opacity-30 hover:bg-zinc-200 transition text-sm">
+        Запази час
+      </button>
+    </div>
+
+    <!-- СТЪПКА 3: Потвърждение -->
+    <div id="step-3" class="hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl text-center space-y-4">
+      <i data-lucide="check-circle" class="w-16 h-16 text-emerald-500 mx-auto"></i>
+      <h2 class="text-2xl font-bold text-white">Успешна резервация!</h2>
+      <p class="text-sm text-zinc-400">
+        Часът ви е запазен успешно за <br />
+        <strong id="confirm-date" class="text-white"></strong> в <strong id="confirm-time" class="text-white"></strong> ч.
+      </p>
+      <button onclick="goToStep(2)" class="w-full bg-zinc-800 text-white font-semibold py-2.5 rounded-xl hover:bg-zinc-700 transition text-sm">
+        Запази друг час
+      </button>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-zinc-900 py-4 text-center text-xs text-zinc-600">
+    © 2026 SG Forge Barber Studio.
+  </footer>
+
+  <script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyCDniksfXmA5GUB4nLzrmumt2AFp4_LxMA",
+      authDomain: "sgforge-barber-studio.firebaseapp.com",
+      projectId: "sgforge-barber-studio",
+      storageBucket: "sgforge-barber-studio.firebasestorage.app",
+      messagingSenderId: "207826077800",
+      appId: "1:207826077800:web:6e776663a44a20f8ee0cb5"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let currentUser = { name: '', phone: '' };
+    let selectedDate = '';
+    let selectedTime = '';
+
+    const availableSlots = ['10:00', '10:45', '11:30', '13:00', '13:45', '14:30', '15:15', '16:00', '17:00'];
+
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      currentUser.name = document.getElementById('client-name').value;
+      currentUser.phone = document.getElementById('client-phone').value;
+      document.getElementById('display-user-name').innerText = currentUser.name;
+      goToStep(2);
+    });
+
+    document.getElementById('booking-date').addEventListener('change', (e) => {
+      selectedDate = e.target.value;
+      if (selectedDate) {
+        document.getElementById('slots-container').classList.remove('hidden');
+        renderSlots();
+      }
+    });
+
+    function renderSlots() {
+      const grid = document.getElementById('slots-grid');
+      grid.innerHTML = '';
+      availableSlots.forEach(slot => {
+        const btn = document.createElement('button');
+        btn.className = `py-2 text-xs font-bold rounded-lg border transition ${selectedTime === slot ? 'bg-white text-black border-white' : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-600'}`;
+        btn.innerText = slot;
+        btn.onclick = () => {
+          selectedTime = slot;
+          renderSlots();
+          document.getElementById('confirm-btn').disabled = false;
+        };
+        grid.appendChild(btn);
+      });
+    }
+
+    function saveBooking() {
+      db.collection('bookings').add({
+        clientName: currentUser.name,
+        clientPhone: currentUser.phone,
+        date: selectedDate,
+        time: selectedTime,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        document.getElementById('confirm-date').innerText = selectedDate;
+        document.getElementById('confirm-time').innerText = selectedTime;
+        goToStep(3);
+      }).catch(err => alert("Грешка при запазването: " + err.message));
+    }
+
+    function goToStep(stepNumber) {
+      document.getElementById('step-1').classList.add('hidden');
+      document.getElementById('step-2').classList.add('hidden');
+      document.getElementById('step-3').classList.add('hidden');
+      document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
+    }
+
+    lucide.createIcons();
+  </script>
+</body>
+</html>
