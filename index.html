@@ -101,14 +101,19 @@
 
   </main>
 
+  <footer class="border-t border-zinc-900 py-4 text-center text-xs text-zinc-600">
+    © 2026 SG Forge Barber Studio.
+  </footer>
+
   <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyCDniksfXmA5GUB4nLzrmumt2AFp4_LxMA",
+      apiKey: "AIzaSyCDniksfXmA5GU04nLzrmumt2AFp4_LxMA",
       authDomain: "sgforge-barber-studio.firebaseapp.com",
       projectId: "sgforge-barber-studio",
       storageBucket: "sgforge-barber-studio.firebasestorage.app",
       messagingSenderId: "207826077800",
-      appId: "1:207826077800:web:6e776663a44a20f8ee0cb5"
+      appId: "1:207826077800:web:6e776663a44a20f8ee0cb5",
+      measurementId: "G-8FNDXQC5VW"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -120,7 +125,6 @@
     let selectedTime = '';
     let scheduleSettings = { startTime: "09:00", endTime: "19:00", serviceDuration: 30, cleanDuration: 15, breakStart: "13:00", breakEnd: "14:00" };
 
-    // Следене за логнат потребител
     auth.onAuthStateChanged(user => {
       if (user) {
         currentUser = user;
@@ -165,7 +169,6 @@
       grid.innerHTML = '';
       const today = new Date();
       
-      // Показваме следващите 14 дни
       for (let i = 0; i < 14; i++) {
         const d = new Date();
         d.setDate(today.getDate() + i);
@@ -188,7 +191,7 @@
 
     function generateTimeSlots() {
       const slots = [];
-      const totalSlotTime = scheduleSettings.serviceDuration + scheduleSettings.cleanDuration; // Общо времетраене с дезинфекцията
+      const totalSlotTime = scheduleSettings.serviceDuration + scheduleSettings.cleanDuration;
       
       let [h, m] = scheduleSettings.startTime.split(':').map(Number);
       let [endH, endM] = scheduleSettings.endTime.split(':').map(Number);
@@ -201,13 +204,12 @@
       const breakEndMin = bEndH * 60 + bEndM;
 
       while (currentMin + scheduleSettings.serviceDuration <= endMin) {
-        // Проверка за обедна почивка
         if (!(currentMin >= breakStartMin && currentMin < breakEndMin)) {
           const slotH = String(Math.floor(currentMin / 60)).padStart(2, '0');
           const slotM = String(currentMin % 60).padStart(2, '0');
           slots.push(`${slotH}:${slotM}`);
         }
-        currentMin += totalSlotTime; // Автоматично добавя времето за дезинфекция към следващия час
+        currentMin += totalSlotTime;
       }
       return slots;
     }
