@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SG Forge - Админ Панел</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-black text-gray-100 min-h-screen font-sans">
+
+  <!-- Header -->
+  <header class="border-b border-zinc-800 bg-zinc-950 p-4 flex justify-between items-center max-w-4xl mx-auto">
+    <div>
+      <h1 class="text-xl font-black uppercase text-white tracking-wider">SG FORGE</h1>
+      <p class="text-xs text-zinc-400">Административен Панел</p>
+    </div>
+    <div id="logout-btn-container" class="hidden">
+      <button onclick="logout()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-1.5 px-3 rounded-lg border border-zinc-700 transition">
+        Изход
+      </button>
+    </div>
+  </header>
+
+  <!-- Login Screen -->
+  <main class="max-w-4xl mx-auto p-4 mt-6">
+    <div id="login-section" class="max-w-xs mx-auto bg-zinc-900 border border-zinc-800 p-6 rounded-2xl text-center space-y-4 shadow-2xl">
+      <i data-lucide="lock" class="w-10 h-10 mx-auto text-zinc-400"></i>
+      <h2 class="text-lg font-bold text-white">Вход за Barber</h2>
+      <input type="password" id="admin-pin" placeholder="Въведете PIN (1234)"
+        class="w-full text-center bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-4 text-white focus:outline-none focus:border-zinc-500 tracking-widest text-lg" />
+      <button onclick="checkPin()" class="w-full bg-white text-black font-bold py-2.5 rounded-xl hover:bg-zinc-200 transition text-sm">
+        Влез
+      </button>
+      <p id="error-msg" class="text-xs text-red-500 hidden">Грешен PIN код!</p>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard-section" class="hidden space-y-6">
+      
+      <!-- Date Picker Bar -->
+      <div class="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div>
+          <label class="block text-xs uppercase font-semibold text-zinc-400 mb-1">Изберете дата за преглед</label>
+          <input type="date" id="admin-date-select" onchange="loadBookings()"
+            class="bg-zinc-950 border border-zinc-800 rounded-lg py-2 px-4 text-sm text-white focus:outline-none focus:border-zinc-500" />
+        </div>
+        <div class="text-right">
+          <p class="text-xs text-zinc-500">Общо часове за деня</p>
+          <p id="total-count" class="text-2xl font-black text-white">0</p>
+        </div>
+      </div>
+
+      <!-- Bookings List -->
+      <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-xl">
+        <div class="p-4 border-b border-zinc-800 flex justify-between items-center">
+          <h3 class="font-bold text-white text-sm uppercase tracking-wider">График за избраната дата</h3>
+          <button onclick="loadBookings()" class="text-xs text-zinc-400 hover:text-white flex items-center gap-1">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Опресни
+          </button>
+        </div>
+
+        <div id="bookings-list" class="divide-y divide-zinc-800">
+          <div class="p-8 text-center text-zinc-500 text-sm">
+            Изберете дата от полето горе, за да заредите графика.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCDniksfXmA5GUB4nLzrmumt2AFp4_LxMA",
+      authDomain: "sgforge-barber-studio.firebaseapp.com",
+      projectId: "sgforge-barber-studio",
+      storageBucket: "sgforge-barber-studio.firebasestorage.app",
+      messagingSenderId: "207826077800",
+      appId: "1:207826077800:web:6e776663a44a20f8ee0cb5"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const PIN = "1234"; // Промени PIN кода оттук при нужда
+
+    function checkPin() {
+      const input = document.getElementById('admin-pin').value;
+      if (input === PIN) {
+        document.getElementById('login-section').classList.add('hidden');
+        document.getElementById('dashboard-section').classList.remove('hidden');
+        document.getElementById('logout-btn-container').classList.remove('hidden');
+        
+        // По подразбиране зареждаме днешната дата
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('admin-date-select').value = today;
+        loadBookings();
+      } else {
+        document.getElementById('error-msg').classList.remove('hidden');
+      }
+    }
+
+    function logout() {
+      document.getElementById('login-section').classList.remove('hidden');
+      document.getElementById('dashboard-section').classList.add('hidden');
+      document.getElementById('logout-btn-container').classList.add('hidden');
+      document.getElementById('admin-pin').value = '';
+    }
+
+    function loadBookings() {
+      const selectedDate = document.getElementById('admin-date-select').value;
+      const listContainer = document.getElementById('bookings-list');
+      
+      if (!selectedDate) return;
+
+      listContainer.innerHTML = '<div class="p-8 text-center text-zinc-500 text-sm">Зареждане...</div>';
+
+      db.collection('bookings')
+        .where('date', '==', selectedDate)
+        .get()
+        .then(snapshot => {
+          document.getElementById('total-count').innerText = snapshot.size;
+
+          if (snapshot.empty) {
+            listContainer.innerHTML = '<div class="p-8 text-center text-zinc-500 text-sm">Няма запазени часове за тази дата.</div>';
+            return;
+          }
+
+          let items = [];
+          snapshot.forEach(doc => {
+            items.push({ id: doc.id, ...doc.data() });
+          });
+
+          // Сортиране по час
+          items.sort((a, b) => a.time.localeCompare(b.time));
+
+          listContainer.innerHTML = '';
+          items.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'p-4 flex justify-between items-center hover:bg-zinc-950/50 transition';
+            row.innerHTML = `
+              <div class="flex items-center gap-4">
+                <span class="bg-white text-black font-black text-xs px-2.5 py-1 rounded-md">${item.time} ч.</span>
+                <div>
+                  <p class="text-sm font-bold text-white">${item.clientName}</p>
+                  <a href="tel:${item.clientPhone}" class="text-xs text-zinc-400 hover:underline flex items-center gap-1 mt-0.5">
+                    <i data-lucide="phone" class="w-3 h-3"></i> ${item.clientPhone}
+                  </a>
+                </div>
+              </div>
+              <button onclick="deleteBooking('${item.id}')" class="text-xs bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition border border-red-500/20">
+                Откажи час
+              </button>
+            `;
+            listContainer.appendChild(row);
+          });
+          lucide.createIcons();
+        })
+        .catch(err => {
+          listContainer.innerHTML = `<div class="p-8 text-center text-red-500 text-sm">Грешка при зареждане: ${err.message}</div>`;
+        });
+    }
+
+    function deleteBooking(id) {
+      if (confirm('Сигурни ли сте, че искате да отмените този час?')) {
+        db.collection('bookings').doc(id).delete().then(() => {
+          loadBookings();
+        });
+      }
+    }
+
+    lucide.createIcons();
+  </script>
+</body>
+</html>
