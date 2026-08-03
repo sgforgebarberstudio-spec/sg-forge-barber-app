@@ -10,7 +10,16 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 </head>
-<body class="bg-black text-gray-100 min-h-screen font-sans pb-12">
+<body class="bg-black text-gray-100 min-h-screen font-sans pb-12 overflow-x-hidden">
+
+  <!-- Анимация при отваряне (Splash Screen) -->
+  <div id="splash-screen" class="fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center transition-opacity duration-700 ease-in-out">
+    <div class="text-center space-y-3 transform scale-95 animate-[pulse_1.5s_infinite]">
+      <h1 class="text-3xl sm:text-5xl font-black uppercase text-white tracking-[0.2em]">SG FORGE</h1>
+      <p class="text-xs sm:text-sm uppercase text-zinc-400 tracking-[0.3em]">Barber Studio</p>
+      <div class="w-16 h-0.5 bg-white mx-auto mt-6 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.8)]"></div>
+    </div>
+  </div>
 
   <header class="border-b border-zinc-800 bg-zinc-950 p-4 flex justify-between items-center max-w-4xl mx-auto sticky top-0 z-50">
     <div>
@@ -140,6 +149,15 @@
     let isRegisterMode = false;
 
     window.onload = () => {
+      // Плавна анимация при зареждане (скрива логото след 1.2 секунди)
+      setTimeout(() => {
+        const splash = document.getElementById('splash-screen');
+        if (splash) {
+          splash.classList.add('opacity-0');
+          setTimeout(() => splash.remove(), 700);
+        }
+      }, 1200);
+
       loadSettingsAndDaysOff();
       auth.onAuthStateChanged(user => {
         currentUser = user;
@@ -378,8 +396,6 @@
         let items = [];
         snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
 
-        // Показваме само тези, които са с 'pending' статус. 
-        // Когато в админ панела ги маркираш като 'attended' или 'missed', те автоматично се махат оттук!
         items = items.filter(item => !item.status || item.status === 'pending');
         items.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
 
