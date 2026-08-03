@@ -180,7 +180,7 @@
         setTimeout(() => { progressBar.style.width = '100%'; }, 80);
       }
 
-      // Плавна анимация при зареждане (скрива логото след 1.2 секунди с разширяване)
+      // Плавна анимация при зареждане
       setTimeout(() => {
         const splash = document.getElementById('splash-screen');
         if (splash) {
@@ -194,8 +194,25 @@
       auth.onAuthStateChanged(user => {
         currentUser = user;
         updateHeaderAuthUI();
+        if (currentUser) {
+          loadUserProfile(); // Зарежда запазените данни на потребителя
+        }
       });
     };
+
+    // Функция за зареждане на записаните име и телефон на потребителя
+    function loadUserProfile() {
+      if (!currentUser) return;
+      db.collection('users').doc(currentUser.uid).get().then(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          const nameInput = document.getElementById('client-name');
+          const phoneInput = document.getElementById('client-phone');
+          if (nameInput && data.name) nameInput.value = data.name;
+          if (phoneInput && data.phone) phoneInput.value = data.phone;
+        }
+      }).catch(err => console.log('Грешка при зареждане на профил:', err));
+    }
 
     function updateHeaderAuthUI() {
       const container = document.getElementById('auth-header-container');
@@ -384,6 +401,7 @@
               if (currentUser) {
                 document.getElementById('client-form').classList.remove('hidden');
                 document.getElementById('login-required-msg').classList.add('hidden');
+                loadUserProfile(); // Опреснява полетата при избор на час
               } else {
                 document.getElementById('client-form').classList.add('hidden');
                 document.getElementById('login-required-msg').classList.remove('hidden');
@@ -403,15 +421,22 @@
 
       if (!name || !phone) return alert('Моля попълнете име и телефонен номер!');
 
-      db.collection('bookings').add({
-        userId: currentUser.uid,
-        clientEmail: currentUser.email || '',
-        clientName: name,
-        clientPhone: phone,
-        date: selectedDate,
-        time: selectedTime,
-        status: 'pending',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      // Записва или актуализира профила на потребителя за бъдещи резервации, след което добавя часа
+      db.collection('users').doc(currentUser.uid).set({
+        name: name,
+        phone: phone,
+        email: currentUser.email || ''
+      }, { merge: true }).then(() => {
+        return db.collection('bookings').add({
+          userId: currentUser.uid,
+          clientEmail: currentUser.email || '',
+          clientName: name,
+          clientPhone: phone,
+          date: selectedDate,
+          time: selectedTime,
+          status: 'pending',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
       }).then(() => {
         alert('Часът е запазен успешно!');
         location.reload();
