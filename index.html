@@ -94,8 +94,8 @@
 
       <!-- Избор на дата -->
       <div>
-        <label class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-2.5">Избери дата</label>
-        <div id="calendar-grid" class="grid grid-cols-7 gap-1.5 text-center text-xs"></div>
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-2.5">Избери дата от месеца</label>
+        <div id="calendar-grid" class="grid grid-cols-7 gap-1.5 text-center text-xs max-h-56 overflow-y-auto pr-1"></div>
       </div>
 
       <!-- Свободни часове -->
@@ -224,26 +224,30 @@
     function renderCalendar() {
       const grid = document.getElementById('calendar-grid');
       grid.innerHTML = '';
-      const today = new Date();
       
-      for (let i = 0; i < 14; i++) {
-        const d = new Date();
-        d.setDate(today.getDate() + i);
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const d = new Date(year, month, day);
         const dateStr = d.toISOString().split('T')[0];
         const dayName = d.toLocaleDateString('bg-BG', { weekday: 'short' });
-        const dayNum = d.getDate();
         const isOff = daysOffList.includes(dateStr);
+        const isPast = dateStr < todayStr;
 
         const btn = document.createElement('button');
         const isSelected = selectedDate === dateStr;
 
-        if (isOff) {
+        if (isOff || isPast) {
           btn.className = 'p-2.5 rounded-2xl border bg-black/20 text-zinc-700 border-zinc-900 cursor-not-allowed flex flex-col items-center opacity-40';
-          btn.innerHTML = `<span class="text-[9px] uppercase font-bold text-zinc-600">Почивка</span><span class="text-xs font-bold line-through">${dayNum}</span>`;
+          btn.innerHTML = `<span class="text-[9px] uppercase font-bold text-zinc-600">${isOff ? 'Почивка' : 'Мин.'}</span><span class="text-xs font-bold line-through">${day}</span>`;
           btn.disabled = true;
         } else {
           btn.className = `p-2.5 rounded-2xl border flex flex-col items-center transition active:scale-95 ${isSelected ? 'bg-white text-black border-white shadow-lg' : 'bg-black text-zinc-300 border-zinc-900 hover:border-zinc-800'}`;
-          btn.innerHTML = `<span class="text-[9px] uppercase font-bold ${isSelected ? 'text-zinc-500' : 'text-zinc-600'}">${dayName}</span><span class="text-xs font-bold">${dayNum}</span>`;
+          btn.innerHTML = `<span class="text-[9px] uppercase font-bold ${isSelected ? 'text-zinc-500' : 'text-zinc-600'}">${dayName}</span><span class="text-xs font-bold">${day}</span>`;
           btn.onclick = () => {
             selectedDate = dateStr;
             renderCalendar();
@@ -284,7 +288,13 @@
       grid.innerHTML = '<p class="col-span-3 text-[11px] text-zinc-600 text-center py-3">Зареждане на часове...</p>';
 
       db.collection('bookings').where('date', '==', selectedDate).get().then(snapshot => {
-        const booked = snapshot.docs.map(doc => doc.data().time);
+        let booked = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (!data.status || data.status === 'pending' || data.status === 'attended') {
+            booked.push(data.time);
+          }
+        });
         const slots = generateTimeSlots();
 
         grid.innerHTML = '';
@@ -322,6 +332,7 @@
         clientPhone: phone,
         date: selectedDate,
         time: selectedTime,
+        status: 'pending',
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       }).then(() => {
         document.getElementById('confirm-date').innerText = selectedDate;
