@@ -155,12 +155,12 @@
 
   <!-- Модален прозорец "Моите часове" -->
   <div id="my-appointments-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50 p-4">
-    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-md w-full space-y-4 shadow-2xl relative">
-      <div class="flex justify-between items-center">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-md w-full space-y-4 shadow-2xl relative max-h-[90vh] flex flex-col">
+      <div class="flex justify-between items-center pb-2 border-b border-zinc-800">
         <h3 class="text-md font-bold text-white uppercase tracking-wider">Моите запазени часове</h3>
         <button onclick="closeMyAppointmentsModal()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-1.5 px-3 rounded-lg border border-zinc-700 transition">Затвори</button>
       </div>
-      <div id="client-appointments-list" class="space-y-3 max-h-64 overflow-y-auto pr-1 divide-y divide-zinc-800/60">
+      <div id="client-appointments-list" class="space-y-3 overflow-y-auto pr-1 flex-grow">
         <p class="text-xs text-zinc-500 text-center py-4">Зареждане...</p>
       </div>
     </div>
@@ -395,7 +395,6 @@
         let booked = [];
         snapshot.forEach(doc => {
           const data = doc.data();
-          // Проверяваме само активните резервации (ако не са отменени)
           if (data.time && data.status !== 'cancelled') {
             booked.push(data.time);
           }
@@ -481,54 +480,87 @@
         let items = [];
         snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
 
-        // Филтрираме само активните (pending) часове
         items = items.filter(item => !item.status || item.status === 'pending');
         items.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
 
         listContainer.innerHTML = '';
+
+        // Информационна бариера горе в модала
+        const infoBanner = document.createElement('div');
+        infoBanner.className = 'bg-zinc-950 border border-zinc-800 p-3 rounded-xl mb-3 text-[11px] text-zinc-400 space-y-1';
+        infoBanner.innerHTML = `
+          <p class="font-bold text-white flex items-center gap-1.5"><i data-lucide="info" class="w-3.5 h-3.5 text-emerald-400"></i> Информация за вашите часове:</p>
+          <p>• Всеки <strong>активен час</strong> може да се откаже до 24 часа преди записа.</p>
+          <p>• За да <strong>промените часа си</strong>, моля откажете настоящия и запазете нов от началния екран.</p>
+        `;
+        listContainer.appendChild(infoBanner);
+
         if (items.length === 0) {
-          listContainer.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Нямате активни запазени часове.</p>';
+          const emptyMsg = document.createElement('p');
+          emptyMsg.className = 'text-xs text-zinc-500 text-center py-4';
+          emptyMsg.innerText = 'Нямате активни запазени часове.';
+          listContainer.appendChild(emptyMsg);
+          lucide.createIcons();
           return;
         }
 
         const now = new Date();
 
-        items.itemsForEach = items.forEach(item => {
-          // Изчисляваме времето до запазения час в часове
+        items.forEach(item => {
           const appointmentDate = new Date(`${item.date}T${item.time}:00`);
           const hoursLeft = (appointmentDate - now) / (1000 * 60 * 60);
           const canCancelOrModify = hoursLeft > 24;
 
-          const div = document.createElement('div');
-          div.className = 'py-3 flex justify-between items-center text-xs';
-          div.innerHTML = `
-            <div>
+          const itemDiv = document.createElement('div');
+          itemDiv.className = 'py-3.5 border-b border-zinc-800/60 last:border-none flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3';
+          
+          itemDiv.innerHTML = `
+            <div class="space-y-1.5 flex-grow">
+              <div class="flex items-center gap-2">
+                <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> АКТИВЕН ЧАС
+                </span>
+              </div>
               <p class="font-bold text-white text-sm">${item.date} в <span class="text-emerald-400">${item.time}</span></p>
-              <p class="text-zinc-400">Клиент: ${item.clientName}</p>
-              ${!canCancelOrModify ? '<p class="text-[10px] text-amber-500 mt-0.5">Часът не може да бъде променен или отказан (остават по-малко от 24ч)</p>' : ''}
-            </div>
-            <div class="flex items-center gap-2">
+              <p class="text-xs text-zinc-400">Клиент: ${item.clientName}</p>
+              
               ${canCancelOrModify ? `
-                <button onclick="cancelClientBooking('${item.id}')" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-2.5 py-1 rounded-lg font-bold transition">
-                  Откажи
+                <p class="text-[11px] text-zinc-300 bg-zinc-950/80 p-2 rounded-xl border border-zinc-800 mt-1">
+                  💡 <span class="font-semibold text-white">Искате да смените часа?</span> Натиснете бутона <strong>„Откажи часа“</strong> и след това изберете нова дата и час от календара.
+                </p>
+              ` : `
+                <p class="text-[11px] text-amber-500 bg-amber-500/5 p-2 rounded-xl border border-amber-500/20 mt-1">
+                  🔒 <span class="font-semibold">Заключен час:</span> Остават по-малко от 24 часа. Отмяна или промяна вече не са възможни.
+                </p>
+              `}
+            </div>
+            
+            <div class="w-full sm:w-auto flex justify-end">
+              ${canCancelOrModify ? `
+                <button onclick="cancelClientBooking('${item.id}')" class="w-full sm:w-auto bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3.5 py-2 rounded-xl font-bold transition text-xs flex items-center justify-center gap-1.5 shadow-md">
+                  <i data-lucide="x-circle" class="w-4 h-4"></i> Откажи часа
                 </button>
               ` : `
-                <span class="bg-zinc-800 text-zinc-500 border border-zinc-700 px-2.5 py-1 rounded-lg font-bold text-[10px]">Заключен</span>
+                <span class="bg-zinc-800/80 text-zinc-500 border border-zinc-700 px-3.5 py-2 rounded-xl font-bold text-[11px] cursor-not-allowed">
+                  Заключен
+                </span>
               `}
             </div>
           `;
-          listContainer.appendChild(div);
+          listContainer.appendChild(itemDiv);
         });
+
+        lucide.createIcons();
       });
     }
 
     function cancelClientBooking(bookingId) {
-      if (!confirm('Сигурни ли сте, че искате да се откажете от този час?')) return;
+      if (!confirm('Сигурни ли сте, че искате да се откажете от този час? Часът ще бъде освободен за други клиенти.')) return;
 
       db.collection('bookings').doc(bookingId).update({
         status: 'cancelled'
       }).then(() => {
-        alert('Часът беше отменен успешно.');
+        alert('Часът беше отменен успешно. Вече можете да си изберете нов час.');
         openMyAppointmentsModal();
       }).catch(err => {
         alert('Грешка при отмяна на часа: ' + err.message);
