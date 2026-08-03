@@ -8,6 +8,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 </head>
 <body class="bg-black text-gray-100 min-h-screen font-sans pb-12">
 
@@ -16,10 +17,10 @@
       <h1 class="text-xl font-black uppercase text-white tracking-wider">SG FORGE</h1>
       <p class="text-xs text-zinc-400">Barber Studio</p>
     </div>
-    <div>
-      <button onclick="openMyAppointmentsModal()" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-zinc-300 py-2 px-3.5 rounded-xl border border-zinc-800 transition flex items-center gap-2 font-bold">
-        <i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i> Часове
-      </button>
+    <div class="flex items-center gap-2">
+      <div id="auth-header-container">
+        <!-- Тук се зарежда бутонът за вход или профилът -->
+      </div>
     </div>
   </header>
 
@@ -38,7 +39,7 @@
         <div id="slots-grid" class="grid grid-cols-3 gap-2"></div>
       </div>
 
-      <!-- Форма за данни -->
+      <!-- Форма за данни (само ако е влязъл) -->
       <div id="client-form" class="hidden space-y-4 pt-2 border-t border-zinc-800">
         <p id="selected-slot-info" class="text-xs text-emerald-400 font-bold text-center"></p>
         <div>
@@ -53,26 +54,62 @@
           Потвърди резервацията
         </button>
       </div>
+
+      <!-- Съобщение ако не е влязъл -->
+      <div id="login-required-msg" class="hidden text-center py-4 space-y-2 border-t border-zinc-800">
+        <p class="text-xs text-zinc-400">Трябва да влезете в профила си, за да запазите час.</p>
+        <button onclick="openAuthModal()" class="bg-white text-black font-bold text-xs py-2 px-4 rounded-xl hover:bg-zinc-200 transition">Вход / Регистрация</button>
+      </div>
     </div>
   </main>
 
-  <!-- Модален прозорец "Моите запазени часове" -->
+  <!-- Модален прозорец за Вход / Регистрация -->
+  <div id="auth-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl relative">
+      <div class="flex justify-between items-center">
+        <h3 id="auth-modal-title" class="text-md font-bold text-white uppercase tracking-wider">Вход в профила</h3>
+        <button onclick="closeAuthModal()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-1.5 px-3 rounded-lg border border-zinc-700 transition">Отказ</button>
+      </div>
+
+      <!-- Google Sign In -->
+      <button onclick="loginWithGoogle()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+        <i data-lucide="globe" class="w-4 h-4"></i> Вход с Google
+      </button>
+
+      <div class="flex items-center my-2">
+        <div class="flex-grow border-t border-zinc-800"></div>
+        <span class="px-2 text-[10px] text-zinc-500 uppercase">или с имейл</span>
+        <div class="flex-grow border-t border-zinc-800"></div>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[11px] text-zinc-400 mb-1">Имейл</label>
+          <input type="email" id="auth-email" placeholder="name@example.com" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-[11px] text-zinc-400 mb-1">Парола</label>
+          <input type="password" id="auth-password" placeholder="••••••••" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none" />
+        </div>
+        <button id="auth-action-btn" onclick="handleEmailAuth()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 rounded-xl text-xs transition">Вход</button>
+      </div>
+
+      <div class="text-center pt-2">
+        <button onclick="toggleAuthMode()" id="auth-toggle-link" class="text-[11px] text-zinc-400 hover:text-white underline">Нямате профил? Регистрирайте се</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модален прозорец "Моите часове" -->
   <div id="my-appointments-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50 p-4">
     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-md w-full space-y-4 shadow-2xl relative">
       <div class="flex justify-between items-center">
         <h3 class="text-md font-bold text-white uppercase tracking-wider">Моите запазени часове</h3>
-        <button onclick="closeMyAppointmentsModal()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-1.5 px-3 rounded-lg border border-zinc-700 transition">Назад</button>
+        <button onclick="closeMyAppointmentsModal()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-1.5 px-3 rounded-lg border border-zinc-700 transition">Затвори</button>
       </div>
-
-      <div id="phone-check-section" class="space-y-3 pt-2">
-        <p class="text-xs text-zinc-400">Въведете вашия телефонен номер, за да видите вашите часове и история:</p>
-        <div class="flex gap-2">
-          <input type="tel" id="check-phone-input" placeholder="089xxxxxxx" class="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-sm text-white focus:outline-none" />
-          <button onclick="fetchClientAppointments()" class="bg-white hover:bg-zinc-200 text-black font-bold px-4 py-2.5 rounded-xl text-xs transition">Търси</button>
-        </div>
+      <div id="client-appointments-list" class="space-y-3 max-h-64 overflow-y-auto pr-1 divide-y divide-zinc-800/60">
+        <p class="text-xs text-zinc-500 text-center py-4">Зареждане...</p>
       </div>
-
-      <div id="client-appointments-list" class="space-y-3 max-h-64 overflow-y-auto pr-1 divide-y divide-zinc-800/60"></div>
     </div>
   </div>
 
@@ -93,15 +130,96 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const auth = firebase.auth();
 
+    let currentUser = null;
     let selectedDate = '';
     let selectedTime = '';
     let scheduleSettings = { startTime: "09:00", endTime: "19:00", serviceDuration: 30, cleanDuration: 15, breakStart: "13:00", breakEnd: "14:00" };
     let daysOffList = [];
+    let isRegisterMode = false;
 
     window.onload = () => {
       loadSettingsAndDaysOff();
+      auth.onAuthStateChanged(user => {
+        currentUser = user;
+        updateHeaderAuthUI();
+      });
     };
+
+    function updateHeaderAuthUI() {
+      const container = document.getElementById('auth-header-container');
+      const clientForm = document.getElementById('client-form');
+      const loginReqMsg = document.getElementById('login-required-msg');
+
+      if (currentUser) {
+        container.innerHTML = `
+          <div class="flex items-center gap-2">
+            <button onclick="openMyAppointmentsModal()" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-zinc-300 py-2 px-3 rounded-xl border border-zinc-800 transition flex items-center gap-1.5 font-bold">
+              <i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-400"></i> Часове
+            </button>
+            <button onclick="logoutUser()" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-red-400 py-2 px-3 rounded-xl border border-zinc-800 transition">
+              Изход
+            </button>
+          </div>
+        `;
+        if (selectedTime) clientForm.classList.remove('hidden');
+        loginReqMsg.classList.add('hidden');
+      } else {
+        container.innerHTML = `
+          <button onclick="openAuthModal()" class="text-xs bg-white hover:bg-zinc-200 text-black font-bold py-2 px-3.5 rounded-xl transition">
+            Вход / Регистрация
+          </button>
+        `;
+        clientForm.classList.add('hidden');
+        if (selectedTime) loginReqMsg.classList.remove('hidden');
+      }
+      lucide.createIcons();
+    }
+
+    function openAuthModal() {
+      document.getElementById('auth-modal').classList.remove('hidden');
+    }
+    function closeAuthModal() {
+      document.getElementById('auth-modal').classList.add('hidden');
+    }
+
+    function toggleAuthMode() {
+      isRegisterMode = !isRegisterMode;
+      document.getElementById('auth-modal-title').innerText = isRegisterMode ? 'Регистрация' : 'Вход в профила';
+      document.getElementById('auth-action-btn').innerText = isRegisterMode ? 'Регистрирай се' : 'Вход';
+      document.getElementById('auth-toggle-link').innerText = isRegisterMode ? 'Вече имате профил? Влезте' : 'Нямате профил? Регистрирайте се';
+    }
+
+    function loginWithGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).then(() => {
+        closeAuthModal();
+      }).catch(err => alert('Грешка при Google вход: ' + err.message));
+    }
+
+    function handleEmailAuth() {
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value.trim();
+
+      if (!email || !password) return alert('Попълнете имейл и парола!');
+
+      if (isRegisterMode) {
+        auth.createUserWithEmailAndPassword(email, password).then(() => {
+          closeAuthModal();
+        }).catch(err => alert('Грешка при регистрация: ' + err.message));
+      } else {
+        auth.signInWithEmailAndPassword(email, password).then(() => {
+          closeAuthModal();
+        }).catch(err => alert('Грешка при вход: ' + err.message));
+      }
+    }
+
+    function logoutUser() {
+      auth.signOut().then(() => {
+        location.reload();
+      });
+    }
 
     function loadSettingsAndDaysOff() {
       db.collection('settings').doc('schedule').get().then(doc => {
@@ -144,6 +262,7 @@
             selectedDate = dateStr;
             selectedTime = '';
             document.getElementById('client-form').classList.add('hidden');
+            document.getElementById('login-required-msg').classList.add('hidden');
             renderCalendar();
             fetchTimeSlots();
           };
@@ -185,7 +304,6 @@
         let booked = [];
         snapshot.forEach(doc => {
           const data = doc.data();
-          // Само активните (pending) часове блокират календара за нови резервации
           if (!data.status || data.status === 'pending') {
             booked.push(data.time);
           }
@@ -213,8 +331,14 @@
             btn.onclick = () => {
               selectedTime = slot;
               fetchTimeSlots();
-              document.getElementById('client-form').classList.remove('hidden');
-              document.getElementById('selected-slot-info', '').innerText = `Избран час: ${selectedDate} в ${selectedTime}`;
+              if (currentUser) {
+                document.getElementById('client-form').classList.remove('hidden');
+                document.getElementById('login-required-msg').classList.add('hidden');
+              } else {
+                document.getElementById('client-form').classList.add('hidden');
+                document.getElementById('login-required-msg').classList.remove('hidden');
+              }
+              document.getElementById('selected-slot-info').innerText = `Избран час: ${selectedDate} в ${selectedTime}`;
             };
           }
           grid.appendChild(btn);
@@ -223,12 +347,15 @@
     }
 
     function confirmBooking() {
+      if (!currentUser) return alert('Моля влезте в профила си!');
       const name = document.getElementById('client-name').value.trim();
       const phone = document.getElementById('client-phone').value.trim();
 
       if (!name || !phone) return alert('Моля попълнете име и телефонен номер!');
 
       db.collection('bookings').add({
+        userId: currentUser.uid,
+        clientEmail: currentUser.email || '',
         clientName: name,
         clientPhone: phone,
         date: selectedDate,
@@ -242,43 +369,27 @@
     }
 
     function openMyAppointmentsModal() {
+      if (!currentUser) return;
       document.getElementById('my-appointments-modal').classList.remove('hidden');
-    }
-
-    function closeMyAppointmentsModal() {
-      document.getElementById('my-appointments-modal').classList.add('hidden');
-    }
-
-    function fetchClientAppointments() {
-      const phone = document.getElementById('check-phone-input').value.trim();
       const listContainer = document.getElementById('client-appointments-list');
-      listContainer.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Търсене на часове...</p>';
+      listContainer.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Зареждане на вашите часове...</p>';
 
-      if (!phone) return alert('Моля въведете телефонен номер!');
-
-      db.collection('bookings').where('clientPhone', '==', phone).get().then(snapshot => {
+      db.collection('bookings').where('userId', '==', currentUser.uid).get().then(snapshot => {
         let items = [];
         snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
 
+        // Показваме само тези, които са с 'pending' статус. 
+        // Когато в админ панела ги маркираш като 'attended' или 'missed', те автоматично се махат оттук!
+        items = items.filter(item => !item.status || item.status === 'pending');
         items.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
 
         listContainer.innerHTML = '';
         if (items.length === 0) {
-          listContainer.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Няма намерени записи за този номер.</p>';
+          listContainer.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Нямате активни запазени часове.</p>';
           return;
         }
 
-        // Показваме ВСИЧКИ записи на клиента с техния реален статус (Активен, Явил се, Не се яви)
         items.forEach(item => {
-          let statusBadge = '';
-          if (item.status === 'attended') {
-            statusBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg font-bold">Явил се</span>';
-          } else if (item.status === 'missed') {
-            statusBadge = '<span class="bg-red-500/10 text-red-400 border border-red-500/20 px-2.5 py-1 rounded-lg font-bold">Не се яви</span>';
-          } else {
-            statusBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg font-bold">Активен</span>';
-          }
-
           const div = document.createElement('div');
           div.className = 'py-3 flex justify-between items-center text-xs';
           div.innerHTML = `
@@ -286,13 +397,15 @@
               <p class="font-bold text-white text-sm">${item.date} в <span class="text-emerald-400">${item.time}</span></p>
               <p class="text-zinc-400">Клиент: ${item.clientName}</p>
             </div>
-            ${statusBadge}
+            <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg font-bold">Активен</span>
           `;
           listContainer.appendChild(div);
         });
-      }).catch(err => {
-        listContainer.innerHTML = `<p class="text-xs text-red-400 text-center py-4">Грешка: ${err.message}</p>`;
       });
+    }
+
+    function closeMyAppointmentsModal() {
+      document.getElementById('my-appointments-modal').classList.add('hidden');
     }
 
     lucide.createIcons();
