@@ -12,7 +12,7 @@
 </head>
 <body class="bg-black text-gray-100 min-h-screen font-sans pb-12">
 
-  <!-- Модал за вход в админ панела (ако не е въведен код) -->
+  <!-- Модал за вход в админ панела -->
   <div id="admin-login-modal" class="fixed inset-0 bg-black z-[100] flex items-center justify-center p-4">
     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center">
       <h2 class="text-lg font-black uppercase text-white tracking-wider">Административен достъп</h2>
@@ -74,13 +74,13 @@
       </button>
     </div>
 
-    <!-- Почивни дни -->
+    <!-- Почивни дни (С отваряне на календар с клик) -->
     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
       <h2 class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
         <i data-lucide="calendar-off" class="w-4 h-4 text-zinc-400"></i> Почивни дни (Избор кога не работиш)
       </h2>
       <div class="flex gap-2">
-        <input type="date" id="day-off-input" class="bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-white" />
+        <input type="date" id="day-off-input" onclick="this.showPicker && this.showPicker()" class="bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-white cursor-pointer [&::-webkit-calendar-picker-indicator]:invert" />
         <button onclick="addDayOff()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-4 py-2.5 rounded-xl text-xs transition">
           Маркирай като почивен ден
         </button>
@@ -88,7 +88,7 @@
       <div id="days-off-list" class="flex flex-wrap gap-2 pt-2"></div>
     </div>
 
-    <!-- Активни запазени часове (В реално време!) -->
+    <!-- Активни запазени часове (В реално време) -->
     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
       <div class="flex justify-between items-center">
         <h2 class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
@@ -98,6 +98,16 @@
       </div>
       <div id="active-bookings-list" class="divide-y divide-zinc-800/60 space-y-2">
         <p class="text-xs text-zinc-500 text-center py-4">Зареждане в реално време...</p>
+      </div>
+    </div>
+
+    <!-- История и статистика по клиенти -->
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
+      <h2 class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
+        <i data-lucide="users" class="w-4 h-4 text-zinc-400"></i> История и статистика по клиенти
+      </h2>
+      <div id="client-stats-list" class="divide-y divide-zinc-800/60 space-y-2">
+        <p class="text-xs text-zinc-500 text-center py-4">Зареждане на статистика...</p>
       </div>
     </div>
 
@@ -117,10 +127,9 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const ADMIN_SECRET = "1234"; // Можеш да си смениш кода тук при желание
+    const ADMIN_SECRET = "1234";
 
     window.onload = () => {
-      // Проверка дали вече е въведен код в рамките на сесията
       if (sessionStorage.getItem('sg_admin_logged') === 'true') {
         document.getElementById('admin-login-modal').classList.add('hidden');
         initAdminPanel();
@@ -146,57 +155,89 @@
     function initAdminPanel() {
       loadSettings();
       loadDaysOff();
-      listenToRealtimeBookings(); // Жив слушател за часове в реално време!
+      listenToRealtimeBookingsAndStats();
     }
 
-    // РЕАЛНО ВРЕМЕ СЛУШАТЕЛ (onSnapshot) - не изисква refresh!
-    function listenToRealtimeBookings() {
+    // Слушател в реално време за всички резервации (активни + статистика)
+    function listenToRealtimeBookingsAndStats() {
       db.collection('bookings').orderBy('date', 'asc').onSnapshot(snapshot => {
-        const listContainer = document.getElementById('active-bookings-list');
-        listContainer.innerHTML = '';
-
         let items = [];
         snapshot.forEach(doc => {
           items.push({ id: doc.id, ...doc.data() });
         });
 
-        // Филтрираме само тези, които са чакащи (pending)
+        // 1. Активни часове (pending)
         const activeItems = items.filter(item => !item.status || item.status === 'pending');
-        
         document.getElementById('active-count').innerText = activeItems.length;
+        
+        const activeContainer = document.getElementById('active-bookings-list');
+        activeContainer.innerHTML = '';
 
         if (activeItems.length === 0) {
-          listContainer.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Няма активни резервации в момента.</p>';
-          return;
+          activeContainer.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Няма активни резервации в момента.</p>';
+        } else {
+          activeItems.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'pt-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs';
+            div.innerHTML = `
+              <div>
+                <p class="font-bold text-white text-sm">${item.date} в <span class="text-emerald-400">${item.time}</span></p>
+                <p class="text-zinc-300 font-semibold">${item.clientName} <span class="text-zinc-500 font-normal">(${item.clientPhone})</span></p>
+                <p class="text-[10px] text-zinc-500">Имейл: ${item.clientEmail || 'Няма'}</p>
+              </div>
+              <div class="flex items-center gap-2 w-full sm:w-auto">
+                <button onclick="updateBookingStatus('${item.id}', 'attended')" class="flex-1 sm:flex-none bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 font-bold px-3 py-1.5 rounded-lg transition">
+                  Яви се
+                </button>
+                <button onclick="updateBookingStatus('${item.id}', 'missed')" class="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-3 py-1.5 rounded-lg transition">
+                  Не се яви
+                </button>
+              </div>
+            `;
+            activeContainer.appendChild(div);
+          });
         }
 
-        activeItems.forEach(item => {
-          const div = document.createElement('div');
-          div.className = 'pt-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs';
-          div.innerHTML = `
-            <div>
-              <p class="font-bold text-white text-sm">${item.date} в <span class="text-emerald-400">${item.time}</span></p>
-              <p class="text-zinc-300 font-semibold">${item.clientName} <span class="text-zinc-500 font-normal">(${item.clientPhone})</span></p>
-              <p class="text-[10px] text-zinc-500">Имейл: ${item.clientEmail || 'Няма'}</p>
-            </div>
-            <div class="flex items-center gap-2 w-full sm:w-auto">
-              <button onclick="updateBookingStatus('${item.id}', 'attended')" class="flex-1 sm:flex-none bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 font-bold px-3 py-1.5 rounded-lg transition">
-                Яви се
-              </button>
-              <button onclick="updateBookingStatus('${item.id}', 'missed')" class="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-3 py-1.5 rounded-lg transition">
-                Не се яви
-              </button>
-            </div>
-          `;
-          listContainer.appendChild(div);
+        // 2. Статистика по клиенти (attended / missed)
+        const statsContainer = document.getElementById('client-stats-list');
+        statsContainer.innerHTML = '';
+
+        let clientMap = {};
+        items.forEach(item => {
+          if (!item.clientName) return;
+          const key = item.clientName.trim().toUpperCase();
+          if (!clientMap[key]) {
+            clientMap[key] = { name: item.clientName, phone: item.clientPhone || '', attended: 0, missed: 0 };
+          }
+          if (item.status === 'attended') clientMap[key].attended++;
+          if (item.status === 'missed') clientMap[key].missed++;
         });
+
+        const clientsArr = Object.values(clientMap);
+        if (clientsArr.length === 0) {
+          statsContainer.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Все още няма история за клиенти.</p>';
+        } else {
+          clientsArr.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'pt-3 flex justify-between items-center text-xs';
+            div.innerHTML = `
+              <div>
+                <p class="font-bold text-white text-sm">${c.name} <span class="text-zinc-500 font-normal">(${c.phone})</span></p>
+              </div>
+              <div class="flex items-center gap-2 font-bold">
+                <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg">Явил се: ${c.attended}</span>
+                <span class="bg-red-500/10 text-red-400 border border-red-500/20 px-2.5 py-1 rounded-lg">Не се яви: ${c.missed}</span>
+              </div>
+            `;
+            statsContainer.appendChild(div);
+          });
+        }
+        lucide.createIcons();
       });
     }
 
     function updateBookingStatus(id, status) {
-      db.collection('bookings').doc(id).update({ status: status }).then(() => {
-        // Часът автоматично се маха от активните благодарение на onSnapshot слушателя отгоре!
-      }).catch(err => alert('Грешка: ' + err.message));
+      db.collection('bookings').doc(id).update({ status: status }).catch(err => alert('Грешка: ' + err.message));
     }
 
     function loadSettings() {
@@ -240,7 +281,7 @@
 
     function addDayOff() {
       const dateVal = document.getElementById('day-off-input').value;
-      if (!dateVal) return alert('Изберете дата!');
+      if (!dateVal) return alert('Изберете дата от календара!');
       if (!currentDaysOff.includes(dateVal)) {
         currentDaysOff.push(dateVal);
         db.collection('settings').doc('daysOff').set({ dates: currentDaysOff }).then(() => {
