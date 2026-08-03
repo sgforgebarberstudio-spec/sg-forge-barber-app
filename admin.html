@@ -89,20 +89,30 @@
         <div id="days-off-list" class="flex flex-wrap gap-2 pt-2"></div>
       </div>
 
-      <!-- Всички запазени часове (Оптимизирано) -->
+      <!-- Активни запазени часове -->
       <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
         <div class="flex justify-between items-center">
           <h3 class="text-md font-bold text-white uppercase tracking-wider flex items-center gap-2">
-            <i data-lucide="calendar" class="w-5 h-5 text-zinc-400"></i> Всички запазени часове
+            <i data-lucide="calendar" class="w-5 h-5 text-zinc-400"></i> Активни запазени часове
           </h3>
           <div class="text-right">
-            <p class="text-xs text-zinc-500">Общо резервации</p>
+            <p class="text-xs text-zinc-500">Активни часове</p>
             <p id="total-count" class="text-2xl font-black text-white">0</p>
           </div>
         </div>
 
         <div id="bookings-list" class="divide-y divide-zinc-800 border-t border-zinc-800 pt-4">
           <div class="p-8 text-center text-zinc-500 text-sm">Зареждане на резервации...</div>
+        </div>
+      </div>
+
+      <!-- История и статистика по клиенти -->
+      <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
+        <h3 class="text-md font-bold text-white uppercase tracking-wider flex items-center gap-2">
+          <i data-lucide="history" class="w-5 h-5 text-zinc-400"></i> История и статистика по клиенти
+        </h3>
+        <div id="clients-history-list" class="space-y-3 pt-2">
+          <div class="text-center text-xs text-zinc-500 py-4">Зареждане на историята...</div>
         </div>
       </div>
 
@@ -212,51 +222,123 @@
       });
     }
 
-    // Оптимизирано зареждане без нужди от сложни индекси в базата данни
     function loadAllBookings() {
       const listContainer = document.getElementById('bookings-list');
       listContainer.innerHTML = '<div class="p-4 text-center text-zinc-500 text-xs">Зареждане на резервации...</div>';
 
       db.collection('bookings').get().then(snapshot => {
-        document.getElementById('total-count').innerText = snapshot.size;
-        
-        if (snapshot.empty) {
-          listContainer.innerHTML = '<div class="p-8 text-center text-zinc-500 text-sm">Няма намерени резервации.</div>';
-          return;
-        }
-
         let items = [];
         snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
 
-        // Сортиране по дата и час директно в браузъра (супер бързо)
+        // Сортиране по дата и час
         items.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
 
+        // Филтрираме само тези, които нямат статус (активни часове)
+        const activeItems = items.filter(item => !item.status || item.status === 'pending');
+        document.getElementById('total-count').innerText = activeItems.length;
+
         listContainer.innerHTML = '';
-        items.forEach(item => {
-          const row = document.createElement('div');
-          row.className = 'py-3.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3';
-          row.innerHTML = `
-            <div class="flex items-center gap-3">
-              <div class="flex flex-col items-center bg-zinc-950 border border-zinc-800 text-white font-black text-xs px-3 py-1.5 rounded-lg min-w-[90px]">
-                <span class="text-emerald-400">${item.date || 'Няма дата'}</span>
-                <span class="text-sm">${item.time || ''}</span>
+        if (activeItems.length === 0) {
+          listContainer.innerHTML = '<div class="p-8 text-center text-zinc-500 text-sm">Няма активни резервации.</div>';
+        } else {
+          activeItems.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'py-3.5 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3';
+            row.innerHTML = `
+              <div class="flex items-center gap-3">
+                <div class="flex flex-col items-center bg-zinc-950 border border-zinc-800 text-white font-black text-xs px-3 py-1.5 rounded-lg min-w-[90px]">
+                  <span class="text-emerald-400">${item.date || 'Няма дата'}</span>
+                  <span class="text-sm">${item.time || ''}</span>
+                </div>
+                <div>
+                  <p class="text-sm font-bold text-white">${item.clientName || 'Клиент'}</p>
+                  <p class="text-xs text-zinc-400">${item.clientPhone || item.clientEmail || 'Няма контакт'}</p>
+                </div>
               </div>
-              <div>
-                <p class="text-sm font-bold text-white">${item.clientName || 'Клиент'}</p>
-                <p class="text-xs text-zinc-400">${item.clientPhone || item.clientEmail || 'Няма контакт'}</p>
+              <div class="flex flex-wrap items-center gap-1.5 self-end lg:self-auto">
+                <button onclick="markAttendance('${item.id}', 'attended')" class="text-xs bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white px-2.5 py-1.5 rounded-lg transition border border-emerald-500/20 font-bold">✅ Яви се</button>
+                <button onclick="markAttendance('${item.id}', 'missed')" class="text-xs bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white px-2.5 py-1.5 rounded-lg transition border border-red-500/20 font-bold">❌ Не се яви</button>
+                <button onclick="rescheduleBooking('${item.id}', '${item.clientName || 'Клиент'}')" class="text-xs bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white px-2.5 py-1.5 rounded-lg transition border border-zinc-700">Пренасочи</button>
+                <button onclick="deleteBooking('${item.id}')" class="text-xs bg-zinc-900 text-zinc-500 hover:text-red-400 px-2.5 py-1.5 rounded-lg transition">Откажи</button>
               </div>
-            </div>
-            <div class="flex items-center gap-2 self-end sm:self-auto">
-              <button onclick="rescheduleBooking('${item.id}', '${item.clientName || 'Клиент'}')" class="text-xs bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white px-3 py-1.5 rounded-lg transition border border-zinc-700">Пренасочи</button>
-              <button onclick="deleteBooking('${item.id}')" class="text-xs bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition">Откажи</button>
-            </div>
-          `;
-          listContainer.appendChild(row);
-        });
+            `;
+            listContainer.appendChild(row);
+          });
+        }
+
+        // Зареждане на секцията с история и статистика по клиенти
+        loadClientHistory(items);
         lucide.createIcons();
       }).catch(err => {
         listContainer.innerHTML = `<div class="p-6 text-center text-red-400 text-xs">Грешка при зареждане: ${err.message}</div>`;
       });
+    }
+
+    function markAttendance(id, status) {
+      db.collection('bookings').doc(id).update({ status: status }).then(() => {
+        loadAllBookings();
+      }).catch(err => alert('Грешка: ' + err.message));
+    }
+
+    function loadClientHistory(items) {
+      const container = document.getElementById('clients-history-list');
+      container.innerHTML = '';
+
+      // Групиране по име на клиента
+      const groups = {};
+      items.forEach(item => {
+        const name = item.clientName || 'Неизвестен клиент';
+        if (!groups[name]) {
+          groups[name] = { attended: 0, missed: 0, bookings: [] };
+        }
+        groups[name].bookings.push(item);
+        if (item.status === 'attended') groups[name].attended++;
+        if (item.status === 'missed') groups[name].missed++;
+      });
+
+      // Сортиране на имената по азбучен ред
+      const sortedNames = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'bg'));
+
+      if (sortedNames.length === 0) {
+        container.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Няма налична история.</p>';
+        return;
+      }
+
+      sortedNames.forEach(name => {
+        const data = groups[name];
+        const details = document.createElement('details');
+        details.className = 'bg-zinc-950 border border-zinc-800 rounded-xl p-3.5 transition group';
+        
+        details.innerHTML = `
+          <summary class="flex justify-between items-center cursor-pointer list-none">
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-bold text-white uppercase">${name}</span>
+              <div class="flex gap-2 text-[11px]">
+                <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-semibold">Явил се: ${data.attended}</span>
+                <span class="bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded font-semibold">Не се яви: ${data.missed}</span>
+              </div>
+            </div>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-zinc-400 transition-transform group-open:rotate-180"></i>
+          </summary>
+          <div class="mt-3 pt-3 border-t border-zinc-900 space-y-2">
+            ${data.bookings.map(b => `
+              <div class="flex justify-between items-center text-xs text-zinc-300 bg-zinc-900/40 p-2.5 rounded-lg border border-zinc-800/50">
+                <div>
+                  <span class="font-bold text-white">${b.date}</span> в <span class="text-emerald-400">${b.time}</span>
+                  <span class="text-zinc-500 ml-2">(${b.clientPhone || b.clientEmail || 'няма контакт'})</span>
+                </div>
+                <div>
+                  ${b.status === 'attended' ? '<span class="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">Явил се</span>' : 
+                    b.status === 'missed' ? '<span class="text-red-400 font-bold bg-red-500/10 px-2 py-0.5 rounded">Не се яви</span>' : 
+                    '<span class="text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded">Предстоящ</span>'}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        container.appendChild(details);
+      });
+      lucide.createIcons();
     }
 
     function rescheduleBooking(id, clientName) {
@@ -275,7 +357,7 @@
     }
 
     function deleteBooking(id) {
-      if (confirm('Сигурни ли сте, че искате да откажете този час?')) {
+      if (confirm('Сигурни ли сте, че искате да изтриете този час?')) {
         db.collection('bookings').doc(id).delete().then(() => loadAllBookings());
       }
     }
