@@ -40,7 +40,7 @@
 </head>
 <body class="bg-black text-gray-100 min-h-screen font-sans pb-12 overflow-x-hidden selection:bg-white selection:text-black">
 
-  <!-- Премиум Splash Screen (Анимация при отваряне) -->
+  <!-- Премиум Splash Screen -->
   <div id="splash-screen" class="fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]">
     <div class="relative flex flex-col items-center space-y-4 px-6 text-center">
       <div class="absolute -inset-12 bg-gradient-to-r from-zinc-800 via-zinc-700 to-zinc-900 rounded-full blur-3xl opacity-25 animate-pulse"></div>
@@ -103,6 +103,39 @@
     </div>
   </main>
 
+  <!-- Универсален Стилен Модален прозорец за Известия и Грешки (Заменя browser alert) -->
+  <div id="alert-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center hidden z-[140] p-4">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative">
+      <div id="alert-modal-icon" class="w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-2">
+        <i data-lucide="alert-circle" class="w-6 h-6"></i>
+      </div>
+      <h3 id="alert-modal-title" class="text-md font-bold text-white uppercase tracking-wider">Внимание</h3>
+      <p id="alert-modal-desc" class="text-xs text-zinc-400">Съобщение...</p>
+      <button onclick="closeCustomAlert()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition mt-2">
+        Разбрах
+      </button>
+    </div>
+  </div>
+
+  <!-- Стилен Модален прозорец за Потвърждение при Отказ (Заменя browser confirm) -->
+  <div id="confirm-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center hidden z-[130] p-4">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative">
+      <div class="w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-2">
+        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+      </div>
+      <h3 id="confirm-modal-title" class="text-md font-bold text-white uppercase tracking-wider">Отказ на запазен час</h3>
+      <p id="confirm-modal-desc" class="text-xs text-zinc-400">Сигурни ли сте, че искате да се откажете от този час? Часът ще бъде освободен за други клиенти.</p>
+      <div class="flex gap-2.5 pt-2">
+        <button onclick="closeCustomConfirm(false)" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2.5 rounded-xl text-xs transition">
+          Запази го
+        </button>
+        <button id="confirm-modal-yes-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-lg shadow-red-500/20">
+          Да, откажи го
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Модален прозорец за Успешна Резервация -->
   <div id="success-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center hidden z-[120] p-4">
     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative">
@@ -114,25 +147,6 @@
       <button onclick="closeSuccessModalAndReload()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition mt-2">
         Супер, разбрах
       </button>
-    </div>
-  </div>
-
-  <!-- Стилен Модален прозорец за Потвърждение при Отказ -->
-  <div id="confirm-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center hidden z-[130] p-4">
-    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative">
-      <div class="w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-2">
-        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
-      </div>
-      <h3 class="text-md font-bold text-white uppercase tracking-wider">Отказ на запазен час</h3>
-      <p id="confirm-modal-desc" class="text-xs text-zinc-400">Сигурни ли сте, че искате да се откажете от този час? Часът ще бъде освободен за други клиенти.</p>
-      <div class="flex gap-2.5 pt-2">
-        <button onclick="closeConfirmModal(false)" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2.5 rounded-xl text-xs transition">
-          Запази го
-        </button>
-        <button id="confirm-modal-yes-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-lg shadow-red-500/20">
-          Да, откажи го
-        </button>
-      </div>
     </div>
   </div>
 
@@ -211,6 +225,47 @@
     let daysOffList = [];
     let isRegisterMode = false;
     let confirmCallback = null;
+
+    // Универсални функции за перфектни модални известия вместо стандартните alert/confirm
+    function showCustomAlert(title, message, isError = true) {
+      document.getElementById('alert-modal-title').innerText = title;
+      document.getElementById('alert-modal-desc').innerText = message;
+      const iconContainer = document.getElementById('alert-modal-icon');
+      if (isError) {
+        iconContainer.className = 'w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-2';
+        iconContainer.innerHTML = '<i data-lucide="alert-circle" class="w-6 h-6"></i>';
+      } else {
+        iconContainer.className = 'w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-2';
+        iconContainer.innerHTML = '<i data-lucide="check" class="w-6 h-6"></i>';
+      }
+      document.getElementById('alert-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeCustomAlert() {
+      document.getElementById('alert-modal').classList.add('hidden');
+    }
+
+    function showCustomConfirm(title, message, onConfirm) {
+      document.getElementById('confirm-modal-title').innerText = title;
+      document.getElementById('confirm-modal-desc').innerText = message;
+      confirmCallback = onConfirm;
+      document.getElementById('confirm-modal').classList.remove('hidden');
+      
+      const yesBtn = document.getElementById('confirm-modal-yes-btn');
+      yesBtn.onclick = () => {
+        closeCustomConfirm(true);
+      };
+      lucide.createIcons();
+    }
+
+    function closeCustomConfirm(result) {
+      document.getElementById('confirm-modal').classList.add('hidden');
+      if (result && typeof confirmCallback === 'function') {
+        confirmCallback();
+      }
+      confirmCallback = null;
+    }
 
     window.onload = () => {
       const progressBar = document.getElementById('splash-progress');
@@ -298,23 +353,23 @@
       const provider = new firebase.auth.GoogleAuthProvider();
       auth.signInWithPopup(provider).then(() => {
         closeAuthModal();
-      }).catch(err => alert('Грешка при Google вход: ' + err.message));
+      }).catch(err => showCustomAlert('Грешка при Google вход', err.message));
     }
 
     function handleEmailAuth() {
       const email = document.getElementById('auth-email').value.trim();
       const password = document.getElementById('auth-password').value.trim();
 
-      if (!email || !password) return alert('Попълнете имейл и парола!');
+      if (!email || !password) return showCustomAlert('Внимание', 'Попълнете имейл и парола!');
 
       if (isRegisterMode) {
         auth.createUserWithEmailAndPassword(email, password).then(() => {
           closeAuthModal();
-        }).catch(err => alert('Грешка при регистрация: ' + err.message));
+        }).catch(err => showCustomAlert('Грешка при регистрация', err.message));
       } else {
         auth.signInWithEmailAndPassword(email, password).then(() => {
           closeAuthModal();
-        }).catch(err => alert('Грешка при вход: ' + err.message));
+        }).catch(err => showCustomAlert('Грешка при вход', err.message));
       }
     }
 
@@ -459,11 +514,11 @@
     }
 
     function confirmBooking() {
-      if (!currentUser) return alert('Моля влезте в профила си!');
+      if (!currentUser) return showCustomAlert('Внимание', 'Моля влезте в профила си!');
       const name = document.getElementById('client-name').value.trim();
       const phone = document.getElementById('client-phone').value.trim();
 
-      if (!name || !phone) return alert('Моля попълнете име и телефонен номер!');
+      if (!name || !phone) return showCustomAlert('Внимание', 'Моля попълнете име и телефонен номер!');
 
       db.collection('users').doc(currentUser.uid).set({
         name: name,
@@ -483,7 +538,7 @@
       }).then(() => {
         document.getElementById('success-modal-desc').innerText = `Успешно запазен час за ${selectedDate} в ${selectedTime}.`;
         document.getElementById('success-modal').classList.remove('hidden');
-      }).catch(err => alert('Грешка при запазване: ' + err.message));
+      }).catch(err => showCustomAlert('Грешка', 'Грешка при запазване: ' + err.message));
     }
 
     function closeSuccessModalAndReload() {
@@ -574,35 +629,15 @@
     }
 
     function cancelClientBooking(bookingId) {
-      showConfirmModal('Сигурни ли сте, че искате да се откажете от този час? Часът ще бъде освободен за други клиенти.', () => {
+      showCustomConfirm('Отказ на запазен час', 'Сигурни ли сте, че искате да се откажете от този час? Часът ще бъде освободен за други клиенти.', () => {
         db.collection('bookings').doc(bookingId).update({
           status: 'cancelled'
         }).then(() => {
           openMyAppointmentsModal();
         }).catch(err => {
-          alert('Грешка при отмяна на часа: ' + err.message);
+          showCustomAlert('Грешка', 'Грешка при отмяна на часа: ' + err.message);
         });
       });
-    }
-
-    function showConfirmModal(message, onConfirm) {
-      document.getElementById('confirm-modal-desc').innerText = message;
-      confirmCallback = onConfirm;
-      document.getElementById('confirm-modal').classList.remove('hidden');
-      
-      const yesBtn = document.getElementById('confirm-modal-yes-btn');
-      yesBtn.onclick = () => {
-        closeConfirmModal(true);
-      };
-      lucide.createIcons();
-    }
-
-    function closeConfirmModal(result) {
-      document.getElementById('confirm-modal').classList.add('hidden');
-      if (result && typeof confirmCallback === 'function') {
-        confirmCallback();
-      }
-      confirmCallback = null;
     }
 
     function closeMyAppointmentsModal() {
