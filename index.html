@@ -395,7 +395,8 @@
         let booked = [];
         snapshot.forEach(doc => {
           const data = doc.data();
-          if (data.time) {
+          // Проверяваме само активните резервации (ако не са отменени)
+          if (data.time && data.status !== 'cancelled') {
             booked.push(data.time);
           }
         });
@@ -480,6 +481,7 @@
         let items = [];
         snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
 
+        // Филтрираме само активните (pending) часове
         items = items.filter(item => !item.status || item.status === 'pending');
         items.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
 
@@ -489,18 +491,47 @@
           return;
         }
 
-        items.forEach(item => {
+        const now = new Date();
+
+        items.itemsForEach = items.forEach(item => {
+          // Изчисляваме времето до запазения час в часове
+          const appointmentDate = new Date(`${item.date}T${item.time}:00`);
+          const hoursLeft = (appointmentDate - now) / (1000 * 60 * 60);
+          const canCancelOrModify = hoursLeft > 24;
+
           const div = document.createElement('div');
           div.className = 'py-3 flex justify-between items-center text-xs';
           div.innerHTML = `
             <div>
               <p class="font-bold text-white text-sm">${item.date} в <span class="text-emerald-400">${item.time}</span></p>
               <p class="text-zinc-400">Клиент: ${item.clientName}</p>
+              ${!canCancelOrModify ? '<p class="text-[10px] text-amber-500 mt-0.5">Часът не може да бъде променен или отказан (остават по-малко от 24ч)</p>' : ''}
             </div>
-            <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg font-bold">Активен</span>
+            <div class="flex items-center gap-2">
+              ${canCancelOrModify ? `
+                <button onclick="cancelClientBooking('${item.id}')" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-2.5 py-1 rounded-lg font-bold transition">
+                  Откажи
+                </button>
+              ` : `
+                <span class="bg-zinc-800 text-zinc-500 border border-zinc-700 px-2.5 py-1 rounded-lg font-bold text-[10px]">Заключен</span>
+              `}
+            </div>
           `;
           listContainer.appendChild(div);
         });
+      });
+    }
+
+    function cancelClientBooking(bookingId) {
+      if (!confirm('Сигурни ли сте, че искате да се откажете от този час?')) return;
+
+      db.collection('bookings').doc(bookingId).update({
+        status: 'cancelled'
+      }).then(() => {
+        alert('Часът беше отменен успешно.');
+        openMyAppointmentsModal();
+      }).catch(err => {
+        alert('Грешка при отмяна на часа: ' + err.message);
       });
     }
 
