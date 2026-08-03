@@ -117,6 +117,25 @@
     </div>
   </div>
 
+  <!-- Стилен Модален прозорец за Потвърждение при Отказ -->
+  <div id="confirm-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center hidden z-[130] p-4">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative">
+      <div class="w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-2">
+        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+      </div>
+      <h3 class="text-md font-bold text-white uppercase tracking-wider">Отказ на запазен час</h3>
+      <p id="confirm-modal-desc" class="text-xs text-zinc-400">Сигурни ли сте, че искате да се откажете от този час? Часът ще бъде освободен за други клиенти.</p>
+      <div class="flex gap-2.5 pt-2">
+        <button onclick="closeConfirmModal(false)" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2.5 rounded-xl text-xs transition">
+          Запази го
+        </button>
+        <button id="confirm-modal-yes-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-lg shadow-red-500/20">
+          Да, откажи го
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Модален прозорец за Вход / Регистрация -->
   <div id="auth-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50 p-4">
     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl relative">
@@ -191,6 +210,7 @@
     let scheduleSettings = { startTime: "09:00", endTime: "19:00", serviceDuration: 30, cleanDuration: 15, breakStart: "13:00", breakEnd: "14:00" };
     let daysOffList = [];
     let isRegisterMode = false;
+    let confirmCallback = null;
 
     window.onload = () => {
       const progressBar = document.getElementById('splash-progress');
@@ -485,7 +505,6 @@
 
         listContainer.innerHTML = '';
 
-        // Информационна бариера горе в модала
         const infoBanner = document.createElement('div');
         infoBanner.className = 'bg-zinc-950 border border-zinc-800 p-3 rounded-xl mb-3 text-[11px] text-zinc-400 space-y-1';
         infoBanner.innerHTML = `
@@ -555,16 +574,35 @@
     }
 
     function cancelClientBooking(bookingId) {
-      if (!confirm('Сигурни ли сте, че искате да се откажете от този час? Часът ще бъде освободен за други клиенти.')) return;
-
-      db.collection('bookings').doc(bookingId).update({
-        status: 'cancelled'
-      }).then(() => {
-        alert('Часът беше отменен успешно. Вече можете да си изберете нов час.');
-        openMyAppointmentsModal();
-      }).catch(err => {
-        alert('Грешка при отмяна на часа: ' + err.message);
+      showConfirmModal('Сигурни ли сте, че искате да се откажете от този час? Часът ще бъде освободен за други клиенти.', () => {
+        db.collection('bookings').doc(bookingId).update({
+          status: 'cancelled'
+        }).then(() => {
+          openMyAppointmentsModal();
+        }).catch(err => {
+          alert('Грешка при отмяна на часа: ' + err.message);
+        });
       });
+    }
+
+    function showConfirmModal(message, onConfirm) {
+      document.getElementById('confirm-modal-desc').innerText = message;
+      confirmCallback = onConfirm;
+      document.getElementById('confirm-modal').classList.remove('hidden');
+      
+      const yesBtn = document.getElementById('confirm-modal-yes-btn');
+      yesBtn.onclick = () => {
+        closeConfirmModal(true);
+      };
+      lucide.createIcons();
+    }
+
+    function closeConfirmModal(result) {
+      document.getElementById('confirm-modal').classList.add('hidden');
+      if (result && typeof confirmCallback === 'function') {
+        confirmCallback();
+      }
+      confirmCallback = null;
     }
 
     function closeMyAppointmentsModal() {
