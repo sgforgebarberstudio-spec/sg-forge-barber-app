@@ -23,6 +23,19 @@
     .animate-fade-in-up {
       animation: fadeInUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
+    @keyframes modalScale {
+      from {
+        opacity: 0;
+        transform: scale(0.85);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    .animate-modal {
+      animation: modalScale 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
   </style>
 </head>
 <body class="bg-black text-gray-100 min-h-screen font-sans pb-12 overflow-x-hidden selection:bg-white selection:text-black">
@@ -30,16 +43,11 @@
   <!-- Премиум Splash Screen (Анимация при отваряне) -->
   <div id="splash-screen" class="fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]">
     <div class="relative flex flex-col items-center space-y-4 px-6 text-center">
-      <!-- Светлинен ореол (Glow) -->
       <div class="absolute -inset-12 bg-gradient-to-r from-zinc-800 via-zinc-700 to-zinc-900 rounded-full blur-3xl opacity-25 animate-pulse"></div>
-      
-      <!-- Лого с плавна входна анимация -->
       <div class="relative z-10 space-y-2 animate-fade-in-up">
         <h1 class="text-4xl sm:text-6xl font-black uppercase text-white tracking-[0.25em] drop-shadow-2xl">SG FORGE</h1>
         <p class="text-xs sm:text-sm uppercase text-zinc-400 tracking-[0.4em] font-semibold">Barber Studio</p>
       </div>
-
-      <!-- Зареждаща линия -->
       <div class="relative z-10 w-36 h-1 bg-zinc-900 rounded-full overflow-hidden mt-6 border border-zinc-800/80">
         <div id="splash-progress" class="absolute top-0 left-0 h-full bg-white rounded-full w-0 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(255,255,255,0.9)]"></div>
       </div>
@@ -52,9 +60,7 @@
       <p class="text-xs text-zinc-400">Barber Studio</p>
     </div>
     <div class="flex items-center gap-2">
-      <div id="auth-header-container">
-        <!-- Тук се зарежда бутонът за вход или профилът -->
-      </div>
+      <div id="auth-header-container"></div>
     </div>
   </header>
 
@@ -73,7 +79,7 @@
         <div id="slots-grid" class="grid grid-cols-3 gap-2"></div>
       </div>
 
-      <!-- Форма за данни (само ако е влязъл) -->
+      <!-- Форма за данни -->
       <div id="client-form" class="hidden space-y-4 pt-2 border-t border-zinc-800">
         <p id="selected-slot-info" class="text-xs text-emerald-400 font-bold text-center"></p>
         <div>
@@ -97,6 +103,20 @@
     </div>
   </main>
 
+  <!-- Модален прозорец за Успешна Резервация (Красив и анимиран) -->
+  <div id="success-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center hidden z-[120] p-4">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative">
+      <div class="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-2">
+        <i data-lucide="check" class="w-6 h-6"></i>
+      </div>
+      <h3 class="text-md font-bold text-white uppercase tracking-wider">Часът е запазен успешно!</h3>
+      <p id="success-modal-desc" class="text-xs text-zinc-400">Очакваме Ви в SG Forge Studio.</p>
+      <button onclick="closeSuccessModalAndReload()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition mt-2">
+        Супер, разбрах
+      </button>
+    </div>
+  </div>
+
   <!-- Модален прозорец за Вход / Регистрация -->
   <div id="auth-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50 p-4">
     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl relative">
@@ -105,7 +125,6 @@
         <button onclick="closeAuthModal()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-1.5 px-3 rounded-lg border border-zinc-700 transition">Отказ</button>
       </div>
 
-      <!-- Google Sign In -->
       <button onclick="loginWithGoogle()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
         <i data-lucide="globe" class="w-4 h-4"></i> Вход с Google
       </button>
@@ -368,7 +387,6 @@
         let booked = [];
         snapshot.forEach(doc => {
           const data = doc.data();
-          // Взимаме часа, стига да има резервация (независимо от статуса й - pending, attended или missed)
           if (data.time) {
             booked.push(data.time);
           }
@@ -435,9 +453,14 @@
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
       }).then(() => {
-        alert('Часът е запазен успешно!');
-        location.reload();
+        // Показваме красивия анимиран модал вместо стандартния alert()
+        document.getElementById('success-modal-desc').innerText = `Успешно запазен час за ${selectedDate} в ${selectedTime}.`;
+        document.getElementById('success-modal').classList.remove('hidden');
       }).catch(err => alert('Грешка при запазване: ' + err.message));
+    }
+
+    function closeSuccessModalAndReload() {
+      location.reload();
     }
 
     function openMyAppointmentsModal() {
