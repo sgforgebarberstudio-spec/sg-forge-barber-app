@@ -119,21 +119,24 @@
     </div>
   </main>
 
-  <!-- Модален прозорец за пренасочване с календар -->
+  <!-- Модален прозорец за пренасочване с визуален календар и часове -->
   <div id="reschedule-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50 p-4">
     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl">
       <h3 class="text-md font-bold text-white" id="reschedule-title">Пренасочване на час</h3>
+      
       <div>
-        <label class="block text-xs text-zinc-400 mb-1">Нова дата (избери от календар)</label>
-        <input type="date" id="modal-date" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-zinc-500" />
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-2">Избери нова дата</label>
+        <div id="modal-calendar-grid" class="grid grid-cols-7 gap-1 text-center text-xs max-h-40 overflow-y-auto pr-1"></div>
       </div>
-      <div>
-        <label class="block text-xs text-zinc-400 mb-1">Нов час</label>
-        <input type="time" id="modal-time" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-zinc-500" />
+
+      <div id="modal-slots-container" class="hidden space-y-2">
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400">Избери нов час</label>
+        <div id="modal-slots-grid" class="grid grid-cols-3 gap-1.5 max-h-32 overflow-y-auto pr-1"></div>
       </div>
+
       <div class="flex gap-2 pt-2">
         <button onclick="closeRescheduleModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2.5 rounded-xl text-xs transition">Отказ</button>
-        <button onclick="confirmReschedule()" class="flex-1 bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition">Запази</button>
+        <button id="modal-confirm-btn" disabled onclick="confirmReschedule()" class="flex-1 bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition disabled:opacity-30">Запази</button>
       </div>
     </div>
   </div>
@@ -152,7 +155,12 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const PIN = "1234";
+
     let currentRescheduleId = null;
+    let modalSelectedDate = '';
+    let modalSelectedTime = '';
+    let scheduleSettings = { startTime: "09:00", endTime: "19:00", serviceDuration: 30, cleanDuration: 15, breakStart: "13:00", breakEnd: "14:00" };
+    let daysOffList = [];
 
     function checkPin() {
       if (document.getElementById('admin-pin').value === PIN) {
@@ -177,6 +185,7 @@
       db.collection('settings').doc('schedule').get().then(doc => {
         if (doc.exists) {
           const data = doc.data();
+          scheduleSettings = data;
           document.getElementById('start-time').value = data.startTime || '09:00';
           document.getElementById('end-time').value = data.endTime || '19:00';
           document.getElementById('service-duration').value = data.serviceDuration || 30;
@@ -188,14 +197,18 @@
     }
 
     function saveScheduleSettings() {
-      db.collection('settings').doc('schedule').set({
+      const data = {
         startTime: document.getElementById('start-time').value,
         endTime: document.getElementById('end-time').value,
         serviceDuration: parseInt(document.getElementById('service-duration').value),
         cleanDuration: parseInt(document.getElementById('clean-duration').value),
         breakStart: document.getElementById('break-start').value,
         breakEnd: document.getElementById('break-end').value,
-      }).then(() => alert('Графикът е запазен успешно!'));
+      };
+      db.collection('settings').doc('schedule').set(data).then(() => {
+        scheduleSettings = data;
+        alert('Графикът е запазен успешно!');
+      });
     }
 
     function loadDaysOff() {
@@ -203,17 +216,19 @@
         const container = document.getElementById('days-off-list');
         container.innerHTML = '';
         if (doc.exists && doc.data().dates) {
-          const dates = doc.data().dates;
-          if (dates.length === 0) {
+          daysOffList = doc.data().dates;
+          if (daysOffList.length === 0) {
             container.innerHTML = '<span class="text-xs text-zinc-500">Няма зададени почивни дни.</span>';
             return;
           }
-          dates.forEach(date => {
+          daysOffList.forEach(date => {
             const badge = document.createElement('div');
             badge.className = 'bg-zinc-950 border border-zinc-800 px-3 py-1.5 rounded-lg flex items-center gap-2 text-xs text-zinc-300';
             badge.innerHTML = `<span>${date}</span> <button onclick="removeDayOff('${date}')" class="text-red-400 hover:text-red-300 font-bold">×</button>`;
             container.appendChild(badge);
           });
+        } else {
+          daysOffList = [];
         }
       });
     }
@@ -276,7 +291,7 @@
               <div class="flex flex-wrap items-center gap-1.5 self-end lg:self-auto">
                 <button onclick="markAttendance('${item.id}', 'attended')" class="text-xs bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white px-2.5 py-1.5 rounded-lg transition border border-emerald-500/20 font-bold">✅ Яви се</button>
                 <button onclick="markAttendance('${item.id}', 'missed')" class="text-xs bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white px-2.5 py-1.5 rounded-lg transition border border-red-500/20 font-bold">❌ Не се яви</button>
-                <button onclick="openRescheduleModal('${item.id}', '${item.clientName || 'Клиент'}', '${item.date || ''}', '${item.time || ''}')" class="text-xs bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white px-2.5 py-1.5 rounded-lg transition border border-zinc-700">Пренасочи</button>
+                <button onclick="openRescheduleModal('${item.id}', '${item.clientName || 'Клиент'}')" class="text-xs bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white px-2.5 py-1.5 rounded-lg transition border border-zinc-700">Пренасочи</button>
                 <button onclick="deleteBooking('${item.id}')" class="text-xs bg-zinc-900 text-zinc-500 hover:text-red-400 px-2.5 py-1.5 rounded-lg transition">Откажи</button>
               </div>
             `;
@@ -297,12 +312,123 @@
       }).catch(err => alert('Грешка: ' + err.message));
     }
 
-    function openRescheduleModal(id, clientName, currentDate, currentTime) {
+    function openRescheduleModal(id, clientName) {
       currentRescheduleId = id;
+      modalSelectedDate = '';
+      modalSelectedTime = '';
       document.getElementById('reschedule-title').innerText = `Пренасочване за ${clientName}`;
-      document.getElementById('modal-date').value = currentDate || new Date().toISOString().split('T')[0];
-      document.getElementById('modal-time').value = currentTime || '10:00';
+      document.getElementById('modal-slots-container').classList.add('hidden');
+      document.getElementById('modal-confirm-btn').disabled = true;
+
+      renderModalCalendar();
       document.getElementById('reschedule-modal').classList.remove('hidden');
+    }
+
+    function renderModalCalendar() {
+      const grid = document.getElementById('modal-calendar-grid');
+      grid.innerHTML = '';
+      
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const d = new Date(year, month, day);
+        const dateStr = d.toISOString().split('T')[0];
+        const dayName = d.toLocaleDateString('bg-BG', { weekday: 'short' });
+        const isOff = daysOffList.includes(dateStr);
+        const isPast = dateStr < todayStr;
+
+        const btn = document.createElement('button');
+        const isSelected = modalSelectedDate === dateStr;
+
+        if (isOff || isPast) {
+          btn.className = 'p-2 rounded-xl border bg-black/20 text-zinc-700 border-zinc-900 cursor-not-allowed flex flex-col items-center opacity-40 text-[10px]';
+          btn.innerHTML = `<span class="uppercase font-bold text-[8px]">${isOff ? 'Почивка' : 'Мин.'}</span><span class="font-bold line-through">${day}</span>`;
+          btn.disabled = true;
+        } else {
+          btn.className = `p-2 rounded-xl border flex flex-col items-center transition active:scale-95 text-[10px] ${isSelected ? 'bg-white text-black border-white shadow-md' : 'bg-black text-zinc-300 border-zinc-900 hover:border-zinc-800'}`;
+          btn.innerHTML = `<span class="uppercase font-bold text-[8px] ${isSelected ? 'text-zinc-500' : 'text-zinc-600'}">${dayName}</span><span class="font-bold">${day}</span>`;
+          btn.onclick = () => {
+            modalSelectedDate = dateStr;
+            modalSelectedTime = '';
+            document.getElementById('modal-confirm-btn').disabled = true;
+            renderModalCalendar();
+            fetchAndRenderModalSlots();
+          };
+        }
+        grid.appendChild(btn);
+      }
+    }
+
+    function generateModalTimeSlots() {
+      const slots = [];
+      const totalSlotTime = scheduleSettings.serviceDuration + scheduleSettings.cleanDuration;
+      let [h, m] = scheduleSettings.startTime.split(':').map(Number);
+      let [endH, endM] = scheduleSettings.endTime.split(':').map(Number);
+      let currentMin = h * 60 + m;
+      const endMin = endH * 60 + endM;
+
+      let [bStartH, bStartM] = scheduleSettings.breakStart.split(':').map(Number);
+      let [bEndH, bEndM] = scheduleSettings.breakEnd.split(':').map(Number);
+      const breakStartMin = bStartH * 60 + bStartM;
+      const breakEndMin = bEndH * 60 + bEndM;
+
+      while (currentMin + scheduleSettings.serviceDuration <= endMin) {
+        if (!(currentMin >= breakStartMin && currentMin < breakEndMin)) {
+          const slotH = String(Math.floor(currentMin / 60)).padStart(2, '0');
+          const slotM = String(currentMin % 60).padStart(2, '0');
+          slots.push(`${slotH}:${slotM}`);
+        }
+        currentMin += totalSlotTime;
+      }
+      return slots;
+    }
+
+    function fetchAndRenderModalSlots() {
+      document.getElementById('modal-slots-container').classList.remove('hidden');
+      const grid = document.getElementById('modal-slots-grid');
+      grid.innerHTML = '<p class="col-span-3 text-[11px] text-zinc-600 text-center py-2">Зареждане на часове...</p>';
+
+      db.collection('bookings').where('date', '==', modalSelectedDate).get().then(snapshot => {
+        let booked = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (doc.id !== currentRescheduleId && (!data.status || data.status === 'pending' || data.status === 'attended')) {
+            booked.push(data.time);
+          }
+        });
+        const slots = generateModalTimeSlots();
+
+        grid.innerHTML = '';
+        if (slots.length === 0) {
+          grid.innerHTML = '<p class="col-span-3 text-[11px] text-zinc-500 text-center py-2">Няма свободни часове.</p>';
+          return;
+        }
+
+        slots.forEach(slot => {
+          const isBooked = booked.includes(slot);
+          const btn = document.createElement('button');
+
+          if (isBooked) {
+            btn.className = 'py-2 text-[11px] font-bold rounded-xl border bg-black/40 text-zinc-700 border-zinc-900 cursor-not-allowed line-through';
+            btn.innerText = slot;
+            btn.disabled = true;
+          } else {
+            const isSelected = modalSelectedTime === slot;
+            btn.className = `py-2 text-[11px] font-bold rounded-xl border transition active:scale-95 ${isSelected ? 'bg-white text-black border-white shadow-md' : 'bg-black text-zinc-300 border-zinc-900'}`;
+            btn.innerText = slot;
+            btn.onclick = () => {
+              modalSelectedTime = slot;
+              fetchAndRenderModalSlots();
+              document.getElementById('modal-confirm-btn').disabled = false;
+            };
+          }
+          grid.appendChild(btn);
+        });
+      });
     }
 
     function closeRescheduleModal() {
@@ -311,13 +437,11 @@
     }
 
     function confirmReschedule() {
-      const newDate = document.getElementById('modal-date').value;
-      const newTime = document.getElementById('modal-time').value;
-      if (!newDate || !newTime) return alert('Моля изберете дата и час!');
+      if (!modalSelectedDate || !modalSelectedTime) return alert('Моля изберете дата и час!');
 
       db.collection('bookings').doc(currentRescheduleId).update({
-        date: newDate,
-        time: newTime
+        date: modalSelectedDate,
+        time: modalSelectedTime
       }).then(() => {
         closeRescheduleModal();
         alert('Часът е пренасочен успешно!');
