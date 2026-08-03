@@ -65,7 +65,7 @@
       </div>
 
       <div id="phone-check-section" class="space-y-3 pt-2">
-        <p class="text-xs text-zinc-400">Въведете вашия телефонен номер, за да видите активните си часове:</p>
+        <p class="text-xs text-zinc-400">Въведете вашия телефонен номер, за да видите вашите часове и история:</p>
         <div class="flex gap-2">
           <input type="tel" id="check-phone-input" placeholder="089xxxxxxx" class="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-sm text-white focus:outline-none" />
           <button onclick="fetchClientAppointments()" class="bg-white hover:bg-zinc-200 text-black font-bold px-4 py-2.5 rounded-xl text-xs transition">Търси</button>
@@ -185,7 +185,8 @@
         let booked = [];
         snapshot.forEach(doc => {
           const data = doc.data();
-          if (!data.status || data.status === 'pending' || data.status === 'attended') {
+          // Само активните (pending) часове блокират календара за нови резервации
+          if (!data.status || data.status === 'pending') {
             booked.push(data.time);
           }
         });
@@ -213,7 +214,7 @@
               selectedTime = slot;
               fetchTimeSlots();
               document.getElementById('client-form').classList.remove('hidden');
-              document.getElementById('selected-slot-info').innerText = `Избран час: ${selectedDate} в ${selectedTime}`;
+              document.getElementById('selected-slot-info', '').innerText = `Избран час: ${selectedDate} в ${selectedTime}`;
             };
           }
           grid.appendChild(btn);
@@ -259,19 +260,25 @@
         let items = [];
         snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
 
-        // ФИЛТЪР: Показваме само тези, които нямат статус или са в статус 'pending'.
-        // Когато ти в админ панела ги маркираш като 'attended' или 'missed', те автоматично се скриват тук!
-        items = items.filter(item => !item.status || item.status === 'pending');
-
         items.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
 
         listContainer.innerHTML = '';
         if (items.length === 0) {
-          listContainer.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Няма активни запазени часове за този номер.</p>';
+          listContainer.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Няма намерени записи за този номер.</p>';
           return;
         }
 
+        // Показваме ВСИЧКИ записи на клиента с техния реален статус (Активен, Явил се, Не се яви)
         items.forEach(item => {
+          let statusBadge = '';
+          if (item.status === 'attended') {
+            statusBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg font-bold">Явил се</span>';
+          } else if (item.status === 'missed') {
+            statusBadge = '<span class="bg-red-500/10 text-red-400 border border-red-500/20 px-2.5 py-1 rounded-lg font-bold">Не се яви</span>';
+          } else {
+            statusBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg font-bold">Активен</span>';
+          }
+
           const div = document.createElement('div');
           div.className = 'py-3 flex justify-between items-center text-xs';
           div.innerHTML = `
@@ -279,7 +286,7 @@
               <p class="font-bold text-white text-sm">${item.date} в <span class="text-emerald-400">${item.time}</span></p>
               <p class="text-zinc-400">Клиент: ${item.clientName}</p>
             </div>
-            <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg font-bold">Активен</span>
+            ${statusBadge}
           `;
           listContainer.appendChild(div);
         });
