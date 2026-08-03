@@ -174,13 +174,11 @@
     let isRegisterMode = false;
 
     window.onload = () => {
-      // Стартиране на прогресбара в анимацията
       const progressBar = document.getElementById('splash-progress');
       if (progressBar) {
         setTimeout(() => { progressBar.style.width = '100%'; }, 80);
       }
 
-      // Плавна анимация при зареждане
       setTimeout(() => {
         const splash = document.getElementById('splash-screen');
         if (splash) {
@@ -195,12 +193,11 @@
         currentUser = user;
         updateHeaderAuthUI();
         if (currentUser) {
-          loadUserProfile(); // Зарежда запазените данни на потребителя
+          loadUserProfile();
         }
       });
     };
 
-    // Функция за зареждане на записаните име и телефон на потребителя
     function loadUserProfile() {
       if (!currentUser) return;
       db.collection('users').doc(currentUser.uid).get().then(doc => {
@@ -371,7 +368,8 @@
         let booked = [];
         snapshot.forEach(doc => {
           const data = doc.data();
-          if (!data.status || data.status === 'pending') {
+          // Взимаме часа, стига да има резервация (независимо от статуса й - pending, attended или missed)
+          if (data.time) {
             booked.push(data.time);
           }
         });
@@ -401,7 +399,7 @@
               if (currentUser) {
                 document.getElementById('client-form').classList.remove('hidden');
                 document.getElementById('login-required-msg').classList.add('hidden');
-                loadUserProfile(); // Опреснява полетата при избор на час
+                loadUserProfile();
               } else {
                 document.getElementById('client-form').classList.add('hidden');
                 document.getElementById('login-required-msg').classList.remove('hidden');
@@ -421,7 +419,6 @@
 
       if (!name || !phone) return alert('Моля попълнете име и телефонен номер!');
 
-      // Записва или актуализира профила на потребителя за бъдещи резервации, след което добавя часа
       db.collection('users').doc(currentUser.uid).set({
         name: name,
         phone: phone,
