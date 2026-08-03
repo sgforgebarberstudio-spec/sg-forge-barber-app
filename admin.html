@@ -119,6 +119,25 @@
     </div>
   </main>
 
+  <!-- Модален прозорец за пренасочване с календар -->
+  <div id="reschedule-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl">
+      <h3 class="text-md font-bold text-white" id="reschedule-title">Пренасочване на час</h3>
+      <div>
+        <label class="block text-xs text-zinc-400 mb-1">Нова дата (избери от календар)</label>
+        <input type="date" id="modal-date" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-zinc-500" />
+      </div>
+      <div>
+        <label class="block text-xs text-zinc-400 mb-1">Нов час</label>
+        <input type="time" id="modal-time" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-zinc-500" />
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeRescheduleModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2.5 rounded-xl text-xs transition">Отказ</button>
+        <button onclick="confirmReschedule()" class="flex-1 bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition">Запази</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyCDniksfxmA5GU04nLzrmumt2AFp4_LxMA",
@@ -133,6 +152,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const PIN = "1234";
+    let currentRescheduleId = null;
 
     function checkPin() {
       if (document.getElementById('admin-pin').value === PIN) {
@@ -230,10 +250,8 @@
         let items = [];
         snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
 
-        // Сортиране по дата и час
         items.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
 
-        // Филтрираме само тези, които нямат статус (активни часове)
         const activeItems = items.filter(item => !item.status || item.status === 'pending');
         document.getElementById('total-count').innerText = activeItems.length;
 
@@ -258,7 +276,7 @@
               <div class="flex flex-wrap items-center gap-1.5 self-end lg:self-auto">
                 <button onclick="markAttendance('${item.id}', 'attended')" class="text-xs bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white px-2.5 py-1.5 rounded-lg transition border border-emerald-500/20 font-bold">✅ Яви се</button>
                 <button onclick="markAttendance('${item.id}', 'missed')" class="text-xs bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white px-2.5 py-1.5 rounded-lg transition border border-red-500/20 font-bold">❌ Не се яви</button>
-                <button onclick="rescheduleBooking('${item.id}', '${item.clientName || 'Клиент'}')" class="text-xs bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white px-2.5 py-1.5 rounded-lg transition border border-zinc-700">Пренасочи</button>
+                <button onclick="openRescheduleModal('${item.id}', '${item.clientName || 'Клиент'}', '${item.date || ''}', '${item.time || ''}')" class="text-xs bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white px-2.5 py-1.5 rounded-lg transition border border-zinc-700">Пренасочи</button>
                 <button onclick="deleteBooking('${item.id}')" class="text-xs bg-zinc-900 text-zinc-500 hover:text-red-400 px-2.5 py-1.5 rounded-lg transition">Откажи</button>
               </div>
             `;
@@ -266,7 +284,6 @@
           });
         }
 
-        // Зареждане на секцията с история и статистика по клиенти
         loadClientHistory(items);
         lucide.createIcons();
       }).catch(err => {
@@ -280,11 +297,38 @@
       }).catch(err => alert('Грешка: ' + err.message));
     }
 
+    function openRescheduleModal(id, clientName, currentDate, currentTime) {
+      currentRescheduleId = id;
+      document.getElementById('reschedule-title').innerText = `Пренасочване за ${clientName}`;
+      document.getElementById('modal-date').value = currentDate || new Date().toISOString().split('T')[0];
+      document.getElementById('modal-time').value = currentTime || '10:00';
+      document.getElementById('reschedule-modal').classList.remove('hidden');
+    }
+
+    function closeRescheduleModal() {
+      document.getElementById('reschedule-modal').classList.add('hidden');
+      currentRescheduleId = null;
+    }
+
+    function confirmReschedule() {
+      const newDate = document.getElementById('modal-date').value;
+      const newTime = document.getElementById('modal-time').value;
+      if (!newDate || !newTime) return alert('Моля изберете дата и час!');
+
+      db.collection('bookings').doc(currentRescheduleId).update({
+        date: newDate,
+        time: newTime
+      }).then(() => {
+        closeRescheduleModal();
+        alert('Часът е пренасочен успешно!');
+        loadAllBookings();
+      }).catch(err => alert('Грешка: ' + err.message));
+    }
+
     function loadClientHistory(items) {
       const container = document.getElementById('clients-history-list');
       container.innerHTML = '';
 
-      // Групиране по име на клиента
       const groups = {};
       items.forEach(item => {
         const name = item.clientName || 'Неизвестен клиент';
@@ -296,7 +340,6 @@
         if (item.status === 'missed') groups[name].missed++;
       });
 
-      // Сортиране на имената по азбучен ред
       const sortedNames = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'bg'));
 
       if (sortedNames.length === 0) {
@@ -339,21 +382,6 @@
         container.appendChild(details);
       });
       lucide.createIcons();
-    }
-
-    function rescheduleBooking(id, clientName) {
-      const newDate = prompt(`Пренасочване за ${clientName}.\nВъведи нова дата (YYYY-MM-DD):`, new Date().toISOString().split('T')[0]);
-      if (!newDate) return;
-      const newTime = prompt(`Въведи нов час (HH:MM):`, "10:00");
-      if (!newTime) return;
-
-      db.collection('bookings').doc(id).update({
-        date: newDate,
-        time: newTime
-      }).then(() => {
-        alert('Часът е пренасочен успешно!');
-        loadAllBookings();
-      }).catch(err => alert('Грешка: ' + err.message));
     }
 
     function deleteBooking(id) {
