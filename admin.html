@@ -3,115 +3,102 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>SG Forge - Админ Панел</title>
+  <title>SG Forge - Admin Panel</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <style>
+    @keyframes modalScale {
+      from { opacity: 0; transform: scale(0.85); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .animate-modal {
+      animation: modalScale 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
 </head>
-<body class="bg-black text-gray-100 min-h-screen font-sans pb-12">
+<body class="bg-black text-gray-100 min-h-screen font-sans pb-12 overflow-x-hidden selection:bg-white selection:text-black">
 
-  <!-- Модал за вход в админ панела -->
-  <div id="admin-login-modal" class="fixed inset-0 bg-black z-[100] flex items-center justify-center p-4">
-    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center">
-      <h2 class="text-lg font-black uppercase text-white tracking-wider">Административен достъп</h2>
-      <p class="text-xs text-zinc-400">Въведете секретния код за управление:</p>
-      <input type="password" id="admin-pass-input" placeholder="••••" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-center text-lg text-white tracking-widest focus:outline-none focus:border-zinc-500" />
-      <button onclick="checkAdminPassword()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3 rounded-xl transition text-sm">
-        Вход в панела
-      </button>
-    </div>
-  </div>
-
+  <!-- Header -->
   <header class="border-b border-zinc-800 bg-zinc-950 p-4 flex justify-between items-center max-w-4xl mx-auto sticky top-0 z-50">
     <div>
       <h1 class="text-xl font-black uppercase text-white tracking-wider">SG FORGE</h1>
-      <p class="text-xs text-zinc-400">Административен Панел</p>
+      <p id="txt-subtitle" class="text-xs text-zinc-400">Административен Панел</p>
     </div>
-    <div>
-      <button onclick="adminLogout()" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-red-400 py-2 px-3 rounded-xl border border-zinc-800 transition">
+    <div class="flex items-center gap-2">
+      <!-- Бутон за смяна на език -->
+      <button onclick="toggleLanguage()" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-zinc-200 py-2 px-3 rounded-xl border border-zinc-800 transition flex items-center gap-1.5 font-bold">
+        <i data-lucide="globe" class="w-3.5 h-3.5 text-emerald-400"></i>
+        <span id="lang-btn-text">ES 🇪🇸</span>
+      </button>
+      <button onclick="logoutAdmin()" id="txt-logout" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-red-400 py-2 px-3 rounded-xl border border-zinc-800 transition">
         Изход
       </button>
     </div>
   </header>
 
   <main class="max-w-4xl mx-auto p-4 mt-6 space-y-6">
-    
     <!-- Настройки на график -->
-    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
-      <h2 class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
-        <i data-lucide="settings" class="w-4 h-4 text-zinc-400"></i> Настройки на график & Дезинфекция
-      </h2>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-        <div>
-          <label class="block text-zinc-400 mb-1">Начало на деня</label>
-          <input type="time" id="set-start-time" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
-        </div>
-        <div>
-          <label class="block text-zinc-400 mb-1">Край на деня</label>
-          <input type="time" id="set-end-time" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
-        </div>
-        <div>
-          <label class="block text-zinc-400 mb-1">Подстригване (минути)</label>
-          <input type="number" id="set-service-duration" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
-        </div>
-        <div>
-          <label class="block text-zinc-400 mb-1">Дезинфекция (минути)</label>
-          <input type="number" id="set-clean-duration" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
-        </div>
-        <div>
-          <label class="block text-zinc-400 mb-1">Почивка от</label>
-          <input type="time" id="set-break-start" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
-        </div>
-        <div>
-          <label class="block text-zinc-400 mb-1">Почивка до</label>
-          <input type="time" id="set-break-end" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
-        </div>
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-5 max-w-lg mx-auto">
+      <div class="flex items-center gap-2 pb-2 border-b border-zinc-800">
+        <i data-lucide="settings" class="w-5 h-5 text-zinc-400"></i>
+        <h2 id="txt-settings-title" class="text-sm font-bold text-white uppercase tracking-wider">Настройки на график & дезинфекция</h2>
       </div>
-      <button onclick="saveScheduleSettings()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl transition text-xs">
-        Запази новия график
-      </button>
-    </div>
+      
+      <div class="space-y-4">
+        <div>
+          <label id="txt-start-time" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Начало на деня</label>
+          <input type="time" id="set-start" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-zinc-500 font-bold text-center" />
+        </div>
+        <div>
+          <label id="txt-end-time" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Край на деня</label>
+          <input type="time" id="set-end" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-zinc-500 font-bold text-center" />
+        </div>
+        <div>
+          <label id="txt-service-dur" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Подстригване (минути)</label>
+          <input type="number" id="set-duration" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-zinc-500 font-bold text-center" />
+        </div>
+        <div>
+          <label id="txt-clean-dur" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Дезинфекция (минути)</label>
+          <input type="number" id="set-clean" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-zinc-500 font-bold text-center" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label id="txt-break-start" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Почивка от</label>
+            <input type="time" id="set-break-start" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-zinc-500 font-bold text-center" />
+          </div>
+          <div>
+            <label id="txt-break-end" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Почивка до</label>
+            <input type="time" id="set-break-end" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-zinc-500 font-bold text-center" />
+          </div>
+        </div>
 
-    <!-- Почивни дни (С отваряне на календар с клик) -->
-    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
-      <h2 class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
-        <i data-lucide="calendar-off" class="w-4 h-4 text-zinc-400"></i> Почивни дни (Избор кога не работиш)
-      </h2>
-      <div class="flex gap-2">
-        <input type="date" id="day-off-input" onclick="this.showPicker && this.showPicker()" class="bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-white cursor-pointer [&::-webkit-calendar-picker-indicator]:invert" />
-        <button onclick="addDayOff()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-4 py-2.5 rounded-xl text-xs transition">
-          Маркирай като почивен ден
+        <button onclick="saveScheduleSettings()" id="txt-save-btn" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3.5 rounded-xl transition text-sm shadow-lg">
+          Запази новия график
         </button>
       </div>
-      <div id="days-off-list" class="flex flex-wrap gap-2 pt-2"></div>
     </div>
-
-    <!-- Активни запазени часове (В реално време) -->
-    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
-      <div class="flex justify-between items-center">
-        <h2 class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
-          <i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i> Активни запазени часове
-        </h2>
-        <span id="active-count" class="text-xs font-bold bg-zinc-800 px-2.5 py-1 rounded-lg text-emerald-400">0</span>
-      </div>
-      <div id="active-bookings-list" class="divide-y divide-zinc-800/60 space-y-2">
-        <p class="text-xs text-zinc-500 text-center py-4">Зареждане в реално време...</p>
-      </div>
-    </div>
-
-    <!-- История и статистика по клиенти -->
-    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
-      <h2 class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
-        <i data-lucide="users" class="w-4 h-4 text-zinc-400"></i> История и статистика по клиенти
-      </h2>
-      <div id="client-stats-list" class="divide-y divide-zinc-800/60 space-y-2">
-        <p class="text-xs text-zinc-500 text-center py-4">Зареждане на статистика...</p>
-      </div>
-    </div>
-
   </main>
+
+  <!-- Универсален Стилен Модален прозорец за Известия -->
+  <div id="alert-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center hidden z-[140] p-4">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative">
+      <div id="alert-modal-icon" class="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-2">
+        <i data-lucide="check" class="w-6 h-6"></i>
+      </div>
+      <h3 id="alert-modal-title" class="text-md font-bold text-white uppercase tracking-wider">Успешно</h3>
+      <p id="alert-modal-desc" class="text-xs text-zinc-400">Промените са запазени.</p>
+      <button onclick="closeCustomAlert()" id="txt-modal-ok" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition mt-2">
+        Разбрах
+      </button>
+    </div>
+  </div>
+
+  <footer class="text-center text-xs text-zinc-600 mt-12">
+    SG FORGE BARBER STUDIO &copy; 2026
+  </footer>
 
   <script>
     const firebaseConfig = {
@@ -126,190 +113,135 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const auth = firebase.auth();
 
-    const ADMIN_SECRET = "1234";
-
-    window.onload = () => {
-      if (sessionStorage.getItem('sg_admin_logged') === 'true') {
-        document.getElementById('admin-login-modal').classList.add('hidden');
-        initAdminPanel();
+    // Речник с преводи (Български / Испански)
+    const translations = {
+      bg: {
+        subtitle: "Административен Панел",
+        logout: "Изход",
+        langBtn: "ES 🇪🇸",
+        settingsTitle: "Настройки на график & дезинфекция",
+        startTime: "Начало на деня",
+        endTime: "Край на деня",
+        serviceDuration: "Подстригване (минути)",
+        cleanDuration: "Дезинфекция (минути)",
+        breakStart: "Почивка от",
+        breakEnd: "Почивка до",
+        saveBtn: "Запази новия график",
+        modalOk: "Разбрах",
+        alertSuccessTitle: "Успешно",
+        alertSuccessDesc: "Графикът е запазен успешно!",
+        alertErrorTitle: "Внимание",
+        alertErrorDesc: "Възникна грешка при запазване."
+      },
+      es: {
+        subtitle: "Panel Administrativo",
+        logout: "Salir",
+        langBtn: "BG 🇧🇬",
+        settingsTitle: "Configuración de Horarios y Limpieza",
+        startTime: "Inicio del día",
+        endTime: "Fin del día",
+        serviceDuration: "Corte (minutos)",
+        cleanDuration: "Limpieza (minutos)",
+        breakStart: "Descanso de",
+        breakEnd: "Descanso hasta",
+        saveBtn: "Guardar nuevo horario",
+        modalOk: "Entendido",
+        alertSuccessTitle: "Éxito",
+        alertSuccessDesc: "¡El horario se ha guardado correctamente!",
+        alertErrorTitle: "Atención",
+        alertErrorDesc: "Ocurrió un error al guardar."
       }
     };
 
-    function checkAdminPassword() {
-      const val = document.getElementById('admin-pass-input').value.trim();
-      if (val === ADMIN_SECRET) {
-        sessionStorage.setItem('sg_admin_logged', 'true');
-        document.getElementById('admin-login-modal').classList.add('hidden');
-        initAdminPanel();
+    let currentLang = localStorage.getItem('sg_admin_lang') || 'bg';
+
+    function toggleLanguage() {
+      currentLang = currentLang === 'bg' ? 'es' : 'bg';
+      localStorage.setItem('sg_admin_lang', currentLang);
+      applyTranslations();
+    }
+
+    function applyTranslations() {
+      const t = translations[currentLang];
+      document.getElementById('txt-subtitle').innerText = t.subtitle;
+      document.getElementById('txt-logout').innerText = t.logout;
+      document.getElementById('lang-btn-text').innerText = t.langBtn;
+      document.getElementById('txt-settings-title').innerText = t.settingsTitle;
+      document.getElementById('txt-start-time').innerText = t.startTime;
+      document.getElementById('txt-end-time').innerText = t.endTime;
+      document.getElementById('txt-service-dur').innerText = t.serviceDuration;
+      document.getElementById('txt-clean-dur').innerText = t.cleanDuration;
+      document.getElementById('txt-break-start').innerText = t.breakStart;
+      document.getElementById('txt-break-end').innerText = t.breakEnd;
+      document.getElementById('txt-save-btn').innerText = t.saveBtn;
+      document.getElementById('txt-modal-ok').innerText = t.modalOk;
+    }
+
+    function showCustomAlert(title, message, isSuccess = true) {
+      const t = translations[currentLang];
+      document.getElementById('alert-modal-title').innerText = title;
+      document.getElementById('alert-modal-desc').innerText = message;
+      
+      const iconContainer = document.getElementById('alert-modal-icon');
+      if (isSuccess) {
+        iconContainer.className = 'w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-2';
+        iconContainer.innerHTML = '<i data-lucide="check" class="w-6 h-6"></i>';
       } else {
-        alert('Грешен код!');
+        iconContainer.className = 'w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-2';
+        iconContainer.innerHTML = '<i data-lucide="alert-circle" class="w-6 h-6"></i>';
       }
+      
+      document.getElementById('alert-modal').classList.remove('hidden');
+      lucide.createIcons();
     }
 
-    function adminLogout() {
-      sessionStorage.removeItem('sg_admin_logged');
-      location.reload();
+    function closeCustomAlert() {
+      document.getElementById('alert-modal').classList.add('hidden');
     }
 
-    function initAdminPanel() {
+    window.onload = () => {
+      applyTranslations();
       loadSettings();
-      loadDaysOff();
-      listenToRealtimeBookingsAndStats();
-    }
-
-    // Слушател в реално време за всички резервации (активни + статистика)
-    function listenToRealtimeBookingsAndStats() {
-      db.collection('bookings').orderBy('date', 'asc').onSnapshot(snapshot => {
-        let items = [];
-        snapshot.forEach(doc => {
-          items.push({ id: doc.id, ...doc.data() });
-        });
-
-        // 1. Активни часове (pending)
-        const activeItems = items.filter(item => !item.status || item.status === 'pending');
-        document.getElementById('active-count').innerText = activeItems.length;
-        
-        const activeContainer = document.getElementById('active-bookings-list');
-        activeContainer.innerHTML = '';
-
-        if (activeItems.length === 0) {
-          activeContainer.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Няма активни резервации в момента.</p>';
-        } else {
-          activeItems.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'pt-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs';
-            div.innerHTML = `
-              <div>
-                <p class="font-bold text-white text-sm">${item.date} в <span class="text-emerald-400">${item.time}</span></p>
-                <p class="text-zinc-300 font-semibold">${item.clientName} <span class="text-zinc-500 font-normal">(${item.clientPhone})</span></p>
-                <p class="text-[10px] text-zinc-500">Имейл: ${item.clientEmail || 'Няма'}</p>
-              </div>
-              <div class="flex items-center gap-2 w-full sm:w-auto">
-                <button onclick="updateBookingStatus('${item.id}', 'attended')" class="flex-1 sm:flex-none bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 font-bold px-3 py-1.5 rounded-lg transition">
-                  Яви се
-                </button>
-                <button onclick="updateBookingStatus('${item.id}', 'missed')" class="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-3 py-1.5 rounded-lg transition">
-                  Не се яви
-                </button>
-              </div>
-            `;
-            activeContainer.appendChild(div);
-          });
-        }
-
-        // 2. Статистика по клиенти (attended / missed)
-        const statsContainer = document.getElementById('client-stats-list');
-        statsContainer.innerHTML = '';
-
-        let clientMap = {};
-        items.forEach(item => {
-          if (!item.clientName) return;
-          const key = item.clientName.trim().toUpperCase();
-          if (!clientMap[key]) {
-            clientMap[key] = { name: item.clientName, phone: item.clientPhone || '', attended: 0, missed: 0 };
-          }
-          if (item.status === 'attended') clientMap[key].attended++;
-          if (item.status === 'missed') clientMap[key].missed++;
-        });
-
-        const clientsArr = Object.values(clientMap);
-        if (clientsArr.length === 0) {
-          statsContainer.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Все още няма история за клиенти.</p>';
-        } else {
-          clientsArr.forEach(c => {
-            const div = document.createElement('div');
-            div.className = 'pt-3 flex justify-between items-center text-xs';
-            div.innerHTML = `
-              <div>
-                <p class="font-bold text-white text-sm">${c.name} <span class="text-zinc-500 font-normal">(${c.phone})</span></p>
-              </div>
-              <div class="flex items-center gap-2 font-bold">
-                <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg">Явил се: ${c.attended}</span>
-                <span class="bg-red-500/10 text-red-400 border border-red-500/20 px-2.5 py-1 rounded-lg">Не се яви: ${c.missed}</span>
-              </div>
-            `;
-            statsContainer.appendChild(div);
-          });
-        }
-        lucide.createIcons();
-      });
-    }
-
-    function updateBookingStatus(id, status) {
-      db.collection('bookings').doc(id).update({ status: status }).catch(err => alert('Грешка: ' + err.message));
-    }
+    };
 
     function loadSettings() {
       db.collection('settings').doc('schedule').get().then(doc => {
         if (doc.exists) {
           const data = doc.data();
-          document.getElementById('set-start-time').value = data.startTime || '09:00';
-          document.getElementById('set-end-time').value = data.endTime || '19:00';
-          document.getElementById('set-service-duration').value = data.serviceDuration || 30;
-          document.getElementById('set-clean-duration').value = data.cleanDuration || 15;
-          document.getElementById('set-break-start').value = data.breakStart || '13:00';
-          document.getElementById('set-break-end').value = data.breakEnd || '14:00';
+          if (data.startTime) document.getElementById('set-start').value = data.startTime;
+          if (data.endTime) document.getElementById('set-end').value = data.endTime;
+          if (data.serviceDuration) document.getElementById('set-duration').value = data.serviceDuration;
+          if (data.cleanDuration) document.getElementById('set-clean').value = data.cleanDuration;
+          if (data.breakStart) document.getElementById('set-break-start').value = data.breakStart;
+          if (data.breakEnd) document.getElementById('set-break-end').value = data.breakEnd;
         }
       });
     }
 
     function saveScheduleSettings() {
-      const startTime = document.getElementById('set-start-time').value;
-      const endTime = document.getElementById('set-end-time').value;
-      const serviceDuration = Number(document.getElementById('set-service-duration').value);
-      const cleanDuration = Number(document.getElementById('set-clean-duration').value);
+      const startTime = document.getElementById('set-start').value;
+      const endTime = document.getElementById('set-end').value;
+      const serviceDuration = Number(document.getElementById('set-duration').value);
+      const cleanDuration = Number(document.getElementById('set-clean').value);
       const breakStart = document.getElementById('set-break-start').value;
       const breakEnd = document.getElementById('set-break-end').value;
 
       db.collection('settings').doc('schedule').set({
         startTime, endTime, serviceDuration, cleanDuration, breakStart, breakEnd
-      }).then(() => {
-        alert('Графикът е обновен успешно!');
-      }).catch(err => alert('Грешка: ' + err.message));
-    }
-
-    let currentDaysOff = [];
-    function loadDaysOff() {
-      db.collection('settings').doc('daysOff').get().then(doc => {
-        if (doc.exists && doc.data().dates) {
-          currentDaysOff = doc.data().dates;
-          renderDaysOffList();
-        }
+      }, { merge: true }).then(() => {
+        const t = translations[currentLang];
+        showCustomAlert(t.alertSuccessTitle, t.alertSuccessDesc, true);
+      }).catch(err => {
+        const t = translations[currentLang];
+        showCustomAlert(t.alertErrorTitle, err.message, false);
       });
     }
 
-    function addDayOff() {
-      const dateVal = document.getElementById('day-off-input').value;
-      if (!dateVal) return alert('Изберете дата от календара!');
-      if (!currentDaysOff.includes(dateVal)) {
-        currentDaysOff.push(dateVal);
-        db.collection('settings').doc('daysOff').set({ dates: currentDaysOff }).then(() => {
-          renderDaysOffList();
-          document.getElementById('day-off-input').value = '';
-        });
-      }
-    }
-
-    function removeDayOff(dateStr) {
-      currentDaysOff = currentDaysOff.filter(d => d !== dateStr);
-      db.collection('settings').doc('daysOff').set({ dates: currentDaysOff }).then(() => {
-        renderDaysOffList();
-      });
-    }
-
-    function renderDaysOffList() {
-      const container = document.getElementById('days-off-list');
-      container.innerHTML = '';
-      if (currentDaysOff.length === 0) {
-        container.innerHTML = '<p class="text-xs text-zinc-500">Няма зададени почивни дни.</p>';
-        return;
-      }
-      currentDaysOff.forEach(d => {
-        const span = document.createElement('span');
-        span.className = 'inline-flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs px-3 py-1.5 rounded-xl font-bold';
-        span.innerHTML = `${d} <button onclick="removeDayOff('${d}')" class="text-red-400 hover:text-red-300 ml-1">&times;</button>`;
-        container.appendChild(span);
+    function logoutAdmin() {
+      auth.signOut().then(() => {
+        location.reload();
       });
     }
 
