@@ -3,102 +3,120 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>SG Forge - Admin Panel</title>
+  <title id="page-title">SG Forge - Административен Панел</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  <style>
-    @keyframes modalScale {
-      from { opacity: 0; transform: scale(0.85); }
-      to { opacity: 1; transform: scale(1); }
-    }
-    .animate-modal {
-      animation: modalScale 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-  </style>
 </head>
-<body class="bg-black text-gray-100 min-h-screen font-sans pb-12 overflow-x-hidden selection:bg-white selection:text-black">
+<body class="bg-black text-gray-100 min-h-screen font-sans pb-12">
 
-  <!-- Header -->
+  <!-- Модал за вход в админ панела -->
+  <div id="admin-login-modal" class="fixed inset-0 bg-black z-[100] flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center">
+      <h2 id="txt-login-title" class="text-lg font-black uppercase text-white tracking-wider">Административен достъп</h2>
+      <p id="txt-login-desc" class="text-xs text-zinc-400">Въведете секретния код за управление:</p>
+      <input type="password" id="admin-pass-input" placeholder="••••" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-center text-lg text-white tracking-widest focus:outline-none focus:border-zinc-500" />
+      <button onclick="checkAdminPassword()" id="txt-login-btn" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3 rounded-xl transition text-sm">
+        Вход в панела
+      </button>
+    </div>
+  </div>
+
   <header class="border-b border-zinc-800 bg-zinc-950 p-4 flex justify-between items-center max-w-4xl mx-auto sticky top-0 z-50">
     <div>
       <h1 class="text-xl font-black uppercase text-white tracking-wider">SG FORGE</h1>
       <p id="txt-subtitle" class="text-xs text-zinc-400">Административен Панел</p>
     </div>
     <div class="flex items-center gap-2">
-      <!-- Бутон за смяна на език -->
+      <!-- Езиков превключвател -->
       <button onclick="toggleLanguage()" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-zinc-200 py-2 px-3 rounded-xl border border-zinc-800 transition flex items-center gap-1.5 font-bold">
         <i data-lucide="globe" class="w-3.5 h-3.5 text-emerald-400"></i>
         <span id="lang-btn-text">ES 🇪🇸</span>
       </button>
-      <button onclick="logoutAdmin()" id="txt-logout" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-red-400 py-2 px-3 rounded-xl border border-zinc-800 transition">
+      <button onclick="adminLogout()" id="txt-logout" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-red-400 py-2 px-3 rounded-xl border border-zinc-800 transition">
         Изход
       </button>
     </div>
   </header>
 
   <main class="max-w-4xl mx-auto p-4 mt-6 space-y-6">
+    
     <!-- Настройки на график -->
-    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-5 max-w-lg mx-auto">
-      <div class="flex items-center gap-2 pb-2 border-b border-zinc-800">
-        <i data-lucide="settings" class="w-5 h-5 text-zinc-400"></i>
-        <h2 id="txt-settings-title" class="text-sm font-bold text-white uppercase tracking-wider">Настройки на график & дезинфекция</h2>
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
+      <h2 id="txt-settings-title" class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
+        <i data-lucide="settings" class="w-4 h-4 text-zinc-400"></i> Настройки на график & Дезинфекция
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+        <div>
+          <label id="txt-start-time" class="block text-zinc-400 mb-1">Начало на деня</label>
+          <input type="time" id="set-start-time" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
+        </div>
+        <div>
+          <label id="txt-end-time" class="block text-zinc-400 mb-1">Край на деня</label>
+          <input type="time" id="set-end-time" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
+        </div>
+        <div>
+          <label id="txt-service-dur" class="block text-zinc-400 mb-1">Подстригване (минути)</label>
+          <input type="number" id="set-service-duration" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
+        </div>
+        <div>
+          <label id="txt-clean-dur" class="block text-zinc-400 mb-1">Дезинфекция (минути)</label>
+          <input type="number" id="set-clean-duration" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
+        </div>
+        <div>
+          <label id="txt-break-start" class="block text-zinc-400 mb-1">Почивка от</label>
+          <input type="time" id="set-break-start" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
+        </div>
+        <div>
+          <label id="txt-break-end" class="block text-zinc-400 mb-1">Почивка до</label>
+          <input type="time" id="set-break-end" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
+        </div>
       </div>
-      
-      <div class="space-y-4">
-        <div>
-          <label id="txt-start-time" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Начало на деня</label>
-          <input type="time" id="set-start" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-zinc-500 font-bold text-center" />
-        </div>
-        <div>
-          <label id="txt-end-time" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Край на деня</label>
-          <input type="time" id="set-end" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-zinc-500 font-bold text-center" />
-        </div>
-        <div>
-          <label id="txt-service-dur" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Подстригване (минути)</label>
-          <input type="number" id="set-duration" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-zinc-500 font-bold text-center" />
-        </div>
-        <div>
-          <label id="txt-clean-dur" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Дезинфекция (минути)</label>
-          <input type="number" id="set-clean" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-zinc-500 font-bold text-center" />
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label id="txt-break-start" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Почивка от</label>
-            <input type="time" id="set-break-start" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-zinc-500 font-bold text-center" />
-          </div>
-          <div>
-            <label id="txt-break-end" class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Почивка до</label>
-            <input type="time" id="set-break-end" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-zinc-500 font-bold text-center" />
-          </div>
-        </div>
-
-        <button onclick="saveScheduleSettings()" id="txt-save-btn" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3.5 rounded-xl transition text-sm shadow-lg">
-          Запази новия график
-        </button>
-      </div>
-    </div>
-  </main>
-
-  <!-- Универсален Стилен Модален прозорец за Известия -->
-  <div id="alert-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center hidden z-[140] p-4">
-    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative">
-      <div id="alert-modal-icon" class="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-2">
-        <i data-lucide="check" class="w-6 h-6"></i>
-      </div>
-      <h3 id="alert-modal-title" class="text-md font-bold text-white uppercase tracking-wider">Успешно</h3>
-      <p id="alert-modal-desc" class="text-xs text-zinc-400">Промените са запазени.</p>
-      <button onclick="closeCustomAlert()" id="txt-modal-ok" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition mt-2">
-        Разбрах
+      <button onclick="saveScheduleSettings()" id="txt-save-btn" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl transition text-xs">
+        Запази новия график
       </button>
     </div>
-  </div>
 
-  <footer class="text-center text-xs text-zinc-600 mt-12">
-    SG FORGE BARBER STUDIO &copy; 2026
-  </footer>
+    <!-- Почивни дни (С отваряне на календар с клик) -->
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
+      <h2 id="txt-days-off-title" class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
+        <i data-lucide="calendar-off" class="w-4 h-4 text-zinc-400"></i> Почивни дни (Избор кога не работиш)
+      </h2>
+      <div class="flex gap-2">
+        <input type="date" id="day-off-input" onclick="this.showPicker && this.showPicker()" class="bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-white cursor-pointer [&::-webkit-calendar-picker-indicator]:invert" />
+        <button onclick="addDayOff()" id="txt-add-off-btn" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-4 py-2.5 rounded-xl text-xs transition">
+          Маркирай като почивен ден
+        </button>
+      </div>
+      <div id="days-off-list" class="flex flex-wrap gap-2 pt-2"></div>
+    </div>
+
+    <!-- Активни запазени часове (В реално време) -->
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
+      <div class="flex justify-between items-center">
+        <h2 id="txt-active-bookings-title" class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
+          <i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i> Активни запазени часове
+        </h2>
+        <span id="active-count" class="text-xs font-bold bg-zinc-800 px-2.5 py-1 rounded-lg text-emerald-400">0</span>
+      </div>
+      <div id="active-bookings-list" class="divide-y divide-zinc-800/60 space-y-2">
+        <p id="txt-loading-active" class="text-xs text-zinc-500 text-center py-4">Зареждане в реално време...</p>
+      </div>
+    </div>
+
+    <!-- История и статистика по клиенти -->
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
+      <h2 id="txt-client-stats-title" class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
+        <i data-lucide="users" class="w-4 h-4 text-zinc-400"></i> История и статистика по клиенти
+      </h2>
+      <div id="client-stats-list" class="divide-y divide-zinc-800/60 space-y-2">
+        <p id="txt-loading-stats" class="text-xs text-zinc-500 text-center py-4">Зареждане на статистика...</p>
+      </div>
+    </div>
+
+  </main>
 
   <script>
     const firebaseConfig = {
@@ -113,15 +131,20 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const auth = firebase.auth();
 
-    // Речник с преводи (Български / Испански)
+    const ADMIN_SECRET = "1234";
+
+    // Речник с преводите (Български / Испански)
     const translations = {
       bg: {
+        pageTitle: "SG Forge - Административен Панел",
+        loginTitle: "Административен достъп",
+        loginDesc: "Въведете секретния код за управление:",
+        loginBtn: "Вход в панела",
         subtitle: "Административен Панел",
         logout: "Изход",
         langBtn: "ES 🇪🇸",
-        settingsTitle: "Настройки на график & дезинфекция",
+        settingsTitle: "Настройки на график & Дезинфекция",
         startTime: "Начало на деня",
         endTime: "Край на деня",
         serviceDuration: "Подстригване (минути)",
@@ -129,13 +152,28 @@
         breakStart: "Почивка от",
         breakEnd: "Почивка до",
         saveBtn: "Запази новия график",
-        modalOk: "Разбрах",
-        alertSuccessTitle: "Успешно",
-        alertSuccessDesc: "Графикът е запазен успешно!",
-        alertErrorTitle: "Внимание",
-        alertErrorDesc: "Възникна грешка при запазване."
+        daysOffTitle: "Почивни дни (Избор кога не работиш)",
+        addOffBtn: "Маркирай като почивен ден",
+        activeBookingsTitle: "Активни запазени часове",
+        clientStatsTitle: "История и статистика по клиенти",
+        loadingActive: "Зареждане в реално време...",
+        loadingStats: "Зареждане на статистика...",
+        noActive: "Няма активни резервации в момента.",
+        noStats: "Все още няма история за клиенти.",
+        noDaysOff: "Няма зададени почивни дни.",
+        attendedBtn: "Яви се",
+        missedBtn: "Не се яви",
+        attendedStat: "Явил се",
+        missedStat: "Не се яви",
+        alertWrongCode: "Грешен код!",
+        alertSaved: "Графикът е обновен успешно!",
+        alertSelectDate: "Изберете дата от календара!"
       },
       es: {
+        pageTitle: "SG Forge - Panel Administrativo",
+        loginTitle: "Acceso Administrativo",
+        loginDesc: "Ingrese el código secreto de gestión:",
+        loginBtn: "Entrar al panel",
         subtitle: "Panel Administrativo",
         logout: "Salir",
         langBtn: "BG 🇧🇬",
@@ -147,11 +185,22 @@
         breakStart: "Descanso de",
         breakEnd: "Descanso hasta",
         saveBtn: "Guardar nuevo horario",
-        modalOk: "Entendido",
-        alertSuccessTitle: "Éxito",
-        alertSuccessDesc: "¡El horario se ha guardado correctamente!",
-        alertErrorTitle: "Atención",
-        alertErrorDesc: "Ocurrió un error al guardar."
+        daysOffTitle: "Días libres (Selecciona cuándo no trabajas)",
+        addOffBtn: "Marcar como día libre",
+        activeBookingsTitle: "Reservas activas",
+        clientStatsTitle: "Historial y estadísticas de clientes",
+        loadingActive: "Cargando en tiempo real...",
+        loadingStats: "Cargando estadísticas...",
+        noActive: "No hay reservas activas en este momento.",
+        noStats: "Aún no hay historial de clientes.",
+        noDaysOff: "No hay días libres establecidos.",
+        attendedBtn: "Asistió",
+        missedBtn: "No asistió",
+        attendedStat: "Asistió",
+        missedStat: "No asistió",
+        alertWrongCode: "¡Código incorrecto!",
+        alertSaved: "¡El horario se ha actualizado correctamente!",
+        alertSelectDate: "¡Selecciona una fecha del calendario!"
       }
     };
 
@@ -161,14 +210,19 @@
       currentLang = currentLang === 'bg' ? 'es' : 'bg';
       localStorage.setItem('sg_admin_lang', currentLang);
       applyTranslations();
+      loadDaysOff();
     }
 
     function applyTranslations() {
       const t = translations[currentLang];
+      document.getElementById('page-title').innerText = t.pageTitle;
+      document.getElementById('txt-login-title').innerText = t.loginTitle;
+      document.getElementById('txt-login-desc').innerText = t.loginDesc;
+      document.getElementById('txt-login-btn').innerText = t.loginBtn;
       document.getElementById('txt-subtitle').innerText = t.subtitle;
       document.getElementById('txt-logout').innerText = t.logout;
       document.getElementById('lang-btn-text').innerText = t.langBtn;
-      document.getElementById('txt-settings-title').innerText = t.settingsTitle;
+      document.getElementById('txt-settings-title').innerHTML = `<i data-lucide="settings" class="w-4 h-4 text-zinc-400"></i> ${t.settingsTitle}`;
       document.getElementById('txt-start-time').innerText = t.startTime;
       document.getElementById('txt-end-time').innerText = t.endTime;
       document.getElementById('txt-service-dur').innerText = t.serviceDuration;
@@ -176,72 +230,207 @@
       document.getElementById('txt-break-start').innerText = t.breakStart;
       document.getElementById('txt-break-end').innerText = t.breakEnd;
       document.getElementById('txt-save-btn').innerText = t.saveBtn;
-      document.getElementById('txt-modal-ok').innerText = t.modalOk;
-    }
+      document.getElementById('txt-days-off-title').innerHTML = `<i data-lucide="calendar-off" class="w-4 h-4 text-zinc-400"></i> ${t.daysOffTitle}`;
+      document.getElementById('txt-add-off-btn').innerText = t.addOffBtn;
+      document.getElementById('txt-active-bookings-title').innerHTML = `<i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i> ${t.activeBookingsTitle}`;
+      document.getElementById('txt-client-stats-title').innerHTML = `<i data-lucide="users" class="w-4 h-4 text-zinc-400"></i> ${t.clientStatsTitle}`;
+      
+      const loadActive = document.getElementById('txt-loading-active');
+      if (loadActive) loadActive.innerText = t.loadingActive;
+      const loadStats = document.getElementById('txt-loading-stats');
+      if (loadStats) loadStats.innerText = t.loadingStats;
 
-    function showCustomAlert(title, message, isSuccess = true) {
-      const t = translations[currentLang];
-      document.getElementById('alert-modal-title').innerText = title;
-      document.getElementById('alert-modal-desc').innerText = message;
-      
-      const iconContainer = document.getElementById('alert-modal-icon');
-      if (isSuccess) {
-        iconContainer.className = 'w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-2';
-        iconContainer.innerHTML = '<i data-lucide="check" class="w-6 h-6"></i>';
-      } else {
-        iconContainer.className = 'w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-2';
-        iconContainer.innerHTML = '<i data-lucide="alert-circle" class="w-6 h-6"></i>';
-      }
-      
-      document.getElementById('alert-modal').classList.remove('hidden');
       lucide.createIcons();
-    }
-
-    function closeCustomAlert() {
-      document.getElementById('alert-modal').classList.add('hidden');
     }
 
     window.onload = () => {
       applyTranslations();
-      loadSettings();
+      if (sessionStorage.getItem('sg_admin_logged') === 'true') {
+        document.getElementById('admin-login-modal').classList.add('hidden');
+        initAdminPanel();
+      }
     };
+
+    function checkAdminPassword() {
+      const val = document.getElementById('admin-pass-input').value.trim();
+      const t = translations[currentLang];
+      if (val === ADMIN_SECRET) {
+        sessionStorage.setItem('sg_admin_logged', 'true');
+        document.getElementById('admin-login-modal').classList.add('hidden');
+        initAdminPanel();
+      } else {
+        alert(t.alertWrongCode);
+      }
+    }
+
+    function adminLogout() {
+      sessionStorage.removeItem('sg_admin_logged');
+      location.reload();
+    }
+
+    function initAdminPanel() {
+      loadSettings();
+      loadDaysOff();
+      listenToRealtimeBookingsAndStats();
+    }
+
+    // Слушател в реално време за всички резервации (активни + статистика)
+    function listenToRealtimeBookingsAndStats() {
+      db.collection('bookings').orderBy('date', 'asc').onSnapshot(snapshot => {
+        let items = [];
+        snapshot.forEach(doc => {
+          items.push({ id: doc.id, ...doc.data() });
+        });
+
+        const t = translations[currentLang];
+
+        // 1. Активни часове (pending)
+        const activeItems = items.filter(item => !item.status || item.status === 'pending');
+        document.getElementById('active-count').innerText = activeItems.length;
+        
+        const activeContainer = document.getElementById('active-bookings-list');
+        activeContainer.innerHTML = '';
+
+        if (activeItems.length === 0) {
+          activeContainer.innerHTML = `<p class="text-xs text-zinc-500 text-center py-4">${t.noActive}</p>`;
+        } else {
+          activeItems.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'pt-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs';
+            div.innerHTML = `
+              <div>
+                <p class="font-bold text-white text-sm">${item.date} в <span class="text-emerald-400">${item.time}</span></p>
+                <p class="text-zinc-300 font-semibold">${item.clientName} <span class="text-zinc-500 font-normal">(${item.clientPhone})</span></p>
+                <p class="text-[10px] text-zinc-500">Имейл: ${item.clientEmail || 'Няма'}</p>
+              </div>
+              <div class="flex items-center gap-2 w-full sm:w-auto">
+                <button onclick="updateBookingStatus('${item.id}', 'attended')" class="flex-1 sm:flex-none bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 font-bold px-3 py-1.5 rounded-lg transition">
+                  ${t.attendedBtn}
+                </button>
+                <button onclick="updateBookingStatus('${item.id}', 'missed')" class="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-3 py-1.5 rounded-lg transition">
+                  ${t.missedBtn}
+                </button>
+              </div>
+            `;
+            activeContainer.appendChild(div);
+          });
+        }
+
+        // 2. Статистика по клиенти (attended / missed)
+        const statsContainer = document.getElementById('client-stats-list');
+        statsContainer.innerHTML = '';
+
+        let clientMap = {};
+        items.forEach(item => {
+          if (!item.clientName) return;
+          const key = item.clientName.trim().toUpperCase();
+          if (!clientMap[key]) {
+            clientMap[key] = { name: item.clientName, phone: item.clientPhone || '', attended: 0, missed: 0 };
+          }
+          if (item.status === 'attended') clientMap[key].attended++;
+          if (item.status === 'missed') clientMap[key].missed++;
+        });
+
+        const clientsArr = Object.values(clientMap);
+        if (clientsArr.length === 0) {
+          statsContainer.innerHTML = `<p class="text-xs text-zinc-500 text-center py-4">${t.noStats}</p>`;
+        } else {
+          clientsArr.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'pt-3 flex justify-between items-center text-xs';
+            div.innerHTML = `
+              <div>
+                <p class="font-bold text-white text-sm">${c.name} <span class="text-zinc-500 font-normal">(${c.phone})</span></p>
+              </div>
+              <div class="flex items-center gap-2 font-bold">
+                <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg">${t.attendedStat}: ${c.attended}</span>
+                <span class="bg-red-500/10 text-red-400 border border-red-500/20 px-2.5 py-1 rounded-lg">${t.missedStat}: ${c.missed}</span>
+              </div>
+            `;
+            statsContainer.appendChild(div);
+          });
+        }
+        lucide.createIcons();
+      });
+    }
+
+    function updateBookingStatus(id, status) {
+      db.collection('bookings').doc(id).update({ status: status }).catch(err => alert('Грешка: ' + err.message));
+    }
 
     function loadSettings() {
       db.collection('settings').doc('schedule').get().then(doc => {
         if (doc.exists) {
           const data = doc.data();
-          if (data.startTime) document.getElementById('set-start').value = data.startTime;
-          if (data.endTime) document.getElementById('set-end').value = data.endTime;
-          if (data.serviceDuration) document.getElementById('set-duration').value = data.serviceDuration;
-          if (data.cleanDuration) document.getElementById('set-clean').value = data.cleanDuration;
-          if (data.breakStart) document.getElementById('set-break-start').value = data.breakStart;
-          if (data.breakEnd) document.getElementById('set-break-end').value = data.breakEnd;
+          document.getElementById('set-start-time').value = data.startTime || '09:00';
+          document.getElementById('set-end-time').value = data.endTime || '19:00';
+          document.getElementById('set-service-duration').value = data.serviceDuration || 30;
+          document.getElementById('set-clean-duration').value = data.cleanDuration || 15;
+          document.getElementById('set-break-start').value = data.breakStart || '13:00';
+          document.getElementById('set-break-end').value = data.breakEnd || '14:00';
         }
       });
     }
 
     function saveScheduleSettings() {
-      const startTime = document.getElementById('set-start').value;
-      const endTime = document.getElementById('set-end').value;
-      const serviceDuration = Number(document.getElementById('set-duration').value);
-      const cleanDuration = Number(document.getElementById('set-clean').value);
+      const startTime = document.getElementById('set-start-time').value;
+      const endTime = document.getElementById('set-end-time').value;
+      const serviceDuration = Number(document.getElementById('set-service-duration').value);
+      const cleanDuration = Number(document.getElementById('set-clean-duration').value);
       const breakStart = document.getElementById('set-break-start').value;
       const breakEnd = document.getElementById('set-break-end').value;
+      const t = translations[currentLang];
 
       db.collection('settings').doc('schedule').set({
         startTime, endTime, serviceDuration, cleanDuration, breakStart, breakEnd
-      }, { merge: true }).then(() => {
-        const t = translations[currentLang];
-        showCustomAlert(t.alertSuccessTitle, t.alertSuccessDesc, true);
-      }).catch(err => {
-        const t = translations[currentLang];
-        showCustomAlert(t.alertErrorTitle, err.message, false);
+      }).then(() => {
+        alert(t.alertSaved);
+      }).catch(err => alert('Грешка: ' + err.message));
+    }
+
+    let currentDaysOff = [];
+    function loadDaysOff() {
+      db.collection('settings').doc('daysOff').get().then(doc => {
+        if (doc.exists && doc.data().dates) {
+          currentDaysOff = doc.data().dates;
+          renderDaysOffList();
+        }
       });
     }
 
-    function logoutAdmin() {
-      auth.signOut().then(() => {
-        location.reload();
+    function addDayOff() {
+      const dateVal = document.getElementById('day-off-input').value;
+      const t = translations[currentLang];
+      if (!dateVal) return alert(t.alertSelectDate);
+      if (!currentDaysOff.includes(dateVal)) {
+        currentDaysOff.push(dateVal);
+        db.collection('settings').doc('daysOff').set({ dates: currentDaysOff }).then(() => {
+          renderDaysOffList();
+          document.getElementById('day-off-input').value = '';
+        });
+      }
+    }
+
+    function removeDayOff(dateStr) {
+      currentDaysOff = currentDaysOff.filter(d => d !== dateStr);
+      db.collection('settings').doc('daysOff').set({ dates: currentDaysOff }).then(() => {
+        renderDaysOffList();
+      });
+    }
+
+    function renderDaysOffList() {
+      const container = document.getElementById('days-off-list');
+      container.innerHTML = '';
+      const t = translations[currentLang];
+      if (currentDaysOff.length === 0) {
+        container.innerHTML = `<p class="text-xs text-zinc-500">${t.noDaysOff}</p>`;
+        return;
+      }
+      currentDaysOff.forEach(d => {
+        const span = document.createElement('span');
+        span.className = 'inline-flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs px-3 py-1.5 rounded-xl font-bold';
+        span.innerHTML = `${d} <button onclick="removeDayOff('${d}')" class="text-red-400 hover:text-red-300 ml-1">&times;</button>`;
+        container.appendChild(span);
       });
     }
 
