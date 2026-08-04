@@ -133,6 +133,7 @@
     const db = firebase.firestore();
 
     const ADMIN_SECRET = "1234";
+    let globalItems = [];
 
     // Речник с преводите (Български / Испански)
     const translations = {
@@ -211,6 +212,7 @@
       localStorage.setItem('sg_admin_lang', currentLang);
       applyTranslations();
       loadDaysOff();
+      renderBookingsAndStats();
     }
 
     function applyTranslations() {
@@ -234,11 +236,6 @@
       document.getElementById('txt-add-off-btn').innerText = t.addOffBtn;
       document.getElementById('txt-active-bookings-title').innerHTML = `<i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i> ${t.activeBookingsTitle}`;
       document.getElementById('txt-client-stats-title').innerHTML = `<i data-lucide="users" class="w-4 h-4 text-zinc-400"></i> ${t.clientStatsTitle}`;
-      
-      const loadActive = document.getElementById('txt-loading-active');
-      if (loadActive) loadActive.innerText = t.loadingActive;
-      const loadStats = document.getElementById('txt-loading-stats');
-      if (loadStats) loadStats.innerText = t.loadingStats;
 
       lucide.createIcons();
     }
@@ -277,81 +274,84 @@
     // Слушател в реално време за всички резервации (активни + статистика)
     function listenToRealtimeBookingsAndStats() {
       db.collection('bookings').orderBy('date', 'asc').onSnapshot(snapshot => {
-        let items = [];
+        globalItems = [];
         snapshot.forEach(doc => {
-          items.push({ id: doc.id, ...doc.data() });
+          globalItems.push({ id: doc.id, ...doc.data() });
         });
-
-        const t = translations[currentLang];
-
-        // 1. Активни часове (pending)
-        const activeItems = items.filter(item => !item.status || item.status === 'pending');
-        document.getElementById('active-count').innerText = activeItems.length;
-        
-        const activeContainer = document.getElementById('active-bookings-list');
-        activeContainer.innerHTML = '';
-
-        if (activeItems.length === 0) {
-          activeContainer.innerHTML = `<p class="text-xs text-zinc-500 text-center py-4">${t.noActive}</p>`;
-        } else {
-          activeItems.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'pt-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs';
-            div.innerHTML = `
-              <div>
-                <p class="font-bold text-white text-sm">${item.date} в <span class="text-emerald-400">${item.time}</span></p>
-                <p class="text-zinc-300 font-semibold">${item.clientName} <span class="text-zinc-500 font-normal">(${item.clientPhone})</span></p>
-                <p class="text-[10px] text-zinc-500">Имейл: ${item.clientEmail || 'Няма'}</p>
-              </div>
-              <div class="flex items-center gap-2 w-full sm:w-auto">
-                <button onclick="updateBookingStatus('${item.id}', 'attended')" class="flex-1 sm:flex-none bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 font-bold px-3 py-1.5 rounded-lg transition">
-                  ${t.attendedBtn}
-                </button>
-                <button onclick="updateBookingStatus('${item.id}', 'missed')" class="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-3 py-1.5 rounded-lg transition">
-                  ${t.missedBtn}
-                </button>
-              </div>
-            `;
-            activeContainer.appendChild(div);
-          });
-        }
-
-        // 2. Статистика по клиенти (attended / missed)
-        const statsContainer = document.getElementById('client-stats-list');
-        statsContainer.innerHTML = '';
-
-        let clientMap = {};
-        items.forEach(item => {
-          if (!item.clientName) return;
-          const key = item.clientName.trim().toUpperCase();
-          if (!clientMap[key]) {
-            clientMap[key] = { name: item.clientName, phone: item.clientPhone || '', attended: 0, missed: 0 };
-          }
-          if (item.status === 'attended') clientMap[key].attended++;
-          if (item.status === 'missed') clientMap[key].missed++;
-        });
-
-        const clientsArr = Object.values(clientMap);
-        if (clientsArr.length === 0) {
-          statsContainer.innerHTML = `<p class="text-xs text-zinc-500 text-center py-4">${t.noStats}</p>`;
-        } else {
-          clientsArr.forEach(c => {
-            const div = document.createElement('div');
-            div.className = 'pt-3 flex justify-between items-center text-xs';
-            div.innerHTML = `
-              <div>
-                <p class="font-bold text-white text-sm">${c.name} <span class="text-zinc-500 font-normal">(${c.phone})</span></p>
-              </div>
-              <div class="flex items-center gap-2 font-bold">
-                <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg">${t.attendedStat}: ${c.attended}</span>
-                <span class="bg-red-500/10 text-red-400 border border-red-500/20 px-2.5 py-1 rounded-lg">${t.missedStat}: ${c.missed}</span>
-              </div>
-            `;
-            statsContainer.appendChild(div);
-          });
-        }
-        lucide.createIcons();
+        renderBookingsAndStats();
       });
+    }
+
+    function renderBookingsAndStats() {
+      const t = translations[currentLang];
+
+      // 1. Активни часове (pending)
+      const activeItems = globalItems.filter(item => !item.status || item.status === 'pending');
+      document.getElementById('active-count').innerText = activeItems.length;
+      
+      const activeContainer = document.getElementById('active-bookings-list');
+      activeContainer.innerHTML = '';
+
+      if (activeItems.length === 0) {
+        activeContainer.innerHTML = `<p class="text-xs text-zinc-500 text-center py-4">${t.noActive}</p>`;
+      } else {
+        activeItems.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'pt-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs';
+          div.innerHTML = `
+            <div>
+              <p class="font-bold text-white text-sm">${item.date} в <span class="text-emerald-400">${item.time}</span></p>
+              <p class="text-zinc-300 font-semibold">${item.clientName} <span class="text-zinc-500 font-normal">(${item.clientPhone})</span></p>
+              <p class="text-[10px] text-zinc-500">Имейл: ${item.clientEmail || 'Няма'}</p>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+              <button onclick="updateBookingStatus('${item.id}', 'attended')" class="flex-1 sm:flex-none bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 font-bold px-3 py-1.5 rounded-lg transition">
+                ${t.attendedBtn}
+              </button>
+              <button onclick="updateBookingStatus('${item.id}', 'missed')" class="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-3 py-1.5 rounded-lg transition">
+                ${t.missedBtn}
+              </button>
+            </div>
+          `;
+          activeContainer.appendChild(div);
+        });
+      }
+
+      // 2. Статистика по клиенти (attended / missed)
+      const statsContainer = document.getElementById('client-stats-list');
+      statsContainer.innerHTML = '';
+
+      let clientMap = {};
+      globalItems.forEach(item => {
+        if (!item.clientName) return;
+        const key = item.clientName.trim().toUpperCase();
+        if (!clientMap[key]) {
+          clientMap[key] = { name: item.clientName, phone: item.clientPhone || '', attended: 0, missed: 0 };
+        }
+        if (item.status === 'attended') clientMap[key].attended++;
+        if (item.status === 'missed') clientMap[key].missed++;
+      });
+
+      const clientsArr = Object.values(clientMap);
+      if (clientsArr.length === 0) {
+        statsContainer.innerHTML = `<p class="text-xs text-zinc-500 text-center py-4">${t.noStats}</p>`;
+      } else {
+        clientsArr.forEach(c => {
+          const div = document.createElement('div');
+          div.className = 'pt-3 flex justify-between items-center text-xs';
+          div.innerHTML = `
+            <div>
+              <p class="font-bold text-white text-sm">${c.name} <span class="text-zinc-500 font-normal">(${c.phone})</span></p>
+            </div>
+            <div class="flex items-center gap-2 font-bold">
+              <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg">${t.attendedStat}: ${c.attended}</span>
+              <span class="bg-red-500/10 text-red-400 border border-red-500/20 px-2.5 py-1 rounded-lg">${t.missedStat}: ${c.missed}</span>
+            </div>
+          `;
+          statsContainer.appendChild(div);
+        });
+      }
+      lucide.createIcons();
     }
 
     function updateBookingStatus(id, status) {
