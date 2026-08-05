@@ -440,13 +440,31 @@
     function generateTimeSlots() {
       const slots = [];
       const totalSlotTime = scheduleSettings.serviceDuration + scheduleSettings.cleanDuration;
-      let [h, m] = scheduleSettings.startTime.split(':').map(Number);
-      let [endH, endM] = scheduleSettings.endTime.split(':').map(Number);
+      
+      // Проверяваме дали избраната дата е Неделя (в JavaScript 0 е индексът за Неделя)
+      const isSunday = new Date(selectedDate).getDay() === 0;
+
+      // Задаваме базовите променливи да са стандартните от базата данни
+      let start = scheduleSettings.startTime;
+      let end = scheduleSettings.endTime;
+      let bStart = scheduleSettings.breakStart;
+      let bEnd = scheduleSettings.breakEnd;
+
+      // АКО Е НЕДЕЛЯ -> Активираме специалния график
+      if (isSunday) {
+        start = "10:00";  
+        end = "15:00";    
+        bStart = "00:00"; 
+        bEnd = "00:00";   
+      }
+
+      let [h, m] = start.split(':').map(Number);
+      let [endH, endM] = end.split(':').map(Number);
       let currentMin = h * 60 + m;
       const endMin = endH * 60 + endM;
 
-      let [bStartH, bStartM] = scheduleSettings.breakStart.split(':').map(Number);
-      let [bEndH, bEndM] = scheduleSettings.breakEnd.split(':').map(Number);
+      let [bStartH, bStartM] = bStart.split(':').map(Number);
+      let [bEndH, bEndM] = bEnd.split(':').map(Number);
       const breakStartMin = bStartH * 60 + bStartM;
       const breakEndMin = bEndH * 60 + bEndM;
 
