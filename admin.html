@@ -79,7 +79,7 @@
       </button>
     </div>
 
-    <!-- Почивни дни (С отваряне на календар с клик) -->
+    <!-- Почивни дни -->
     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
       <h2 id="txt-days-off-title" class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
         <i data-lucide="calendar-off" class="w-4 h-4 text-zinc-400"></i> Почивни дни (Избор кога не работиш)
@@ -93,7 +93,7 @@
       <div id="days-off-list" class="flex flex-wrap gap-2 pt-2"></div>
     </div>
 
-    <!-- Ръчно добавяне на час от админа -->
+    <!-- Ръчно добавяне на час -->
     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
       <h2 id="txt-manual-title" class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
         <i data-lucide="user-plus" class="w-4 h-4 text-emerald-400"></i> Ръчно добавяне на час
@@ -127,7 +127,7 @@
       </button>
     </div>
 
-    <!-- Активни запазени часове (В реално време) -->
+    <!-- Активни запазени часове -->
     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
       <div class="flex justify-between items-center">
         <h2 id="txt-active-bookings-title" class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
@@ -178,7 +178,6 @@
     };
     let currentDaysOff = [];
 
-    // Речник с преводите (Български / Испански)
     const translations = {
       bg: {
         pageTitle: "SG Forge - Административен Панел",
@@ -344,7 +343,6 @@
       listenToRealtimeBookingsAndStats();
     }
 
-    // Слушател в реално време за всички резервации (активни + статистика)
     function listenToRealtimeBookingsAndStats() {
       db.collection('bookings').orderBy('date', 'asc').onSnapshot(snapshot => {
         globalItems = [];
@@ -358,8 +356,6 @@
 
     function renderBookingsAndStats() {
       const t = translations[currentLang];
-
-      // 1. Активни часове (pending)
       const activeItems = globalItems.filter(item => !item.status || item.status === 'pending');
       document.getElementById('active-count').innerText = activeItems.length;
       
@@ -391,7 +387,6 @@
         });
       }
 
-      // 2. Статистика по клиенти (attended / missed)
       const statsContainer = document.getElementById('client-stats-list');
       statsContainer.innerHTML = '';
 
@@ -432,7 +427,6 @@
       db.collection('bookings').doc(id).update({ status: status }).catch(err => alert('Грешка: ' + err.message));
     }
 
-    // Генератор на свободни часове за избраната дата
     function updateManualAvailableSlots() {
       const dateVal = document.getElementById('manual-date').value;
       const selectElem = document.getElementById('manual-time-select');
@@ -448,7 +442,6 @@
         return;
       }
 
-      // Проверка дали денят е почивен
       if (currentDaysOff.includes(dateVal)) {
         const opt = document.createElement('option');
         opt.value = '';
@@ -466,7 +459,6 @@
       const breakStartMin = currentSettings.breakStart ? timeToMins(currentSettings.breakStart) : null;
       const breakEndMin = currentSettings.breakEnd ? timeToMins(currentSettings.breakEnd) : null;
 
-      // Вземи заетите часове за тази дата (които не са отменени)
       const bookedTimes = globalItems
         .filter(item => item.date === dateVal && (!item.status || item.status === 'pending' || item.status === 'attended'))
         .map(item => item.time);
@@ -475,14 +467,12 @@
       for (let m = startMin; m + serviceDur <= endMin; m += slotStep) {
         const slotTimeStr = minsToTime(m);
 
-        // Проверка дали попада в обедна почивка
         if (breakStartMin !== null && breakEndMin !== null) {
           if (m < breakEndMin && (m + serviceDur) > breakStartMin) {
             continue;
           }
         }
 
-        // Проверка дали часът вече е зает
         if (!bookedTimes.includes(slotTimeStr)) {
           generatedSlots.push(slotTimeStr);
         }
@@ -540,8 +530,8 @@
         document.getElementById('manual-client-name').value = '';
         document.getElementById('manual-client-phone').value = '';
         document.getElementById('manual-date').value = '';
+        document.getElementById('manual-time-select').innerHTML = `<option value="">${t.selectDateFirst}</option>`;
         document.getElementById('manual-client-email').value = '';
-        updateManualAvailableSlots();
       }).catch(err => alert('Грешка: ' + err.message));
     }
 
@@ -579,7 +569,6 @@
       }).catch(err => alert('Грешка: ' + err.message));
     }
 
-    let currentDaysOff = [];
     function loadDaysOff() {
       db.collection('settings').doc('daysOff').get().then(doc => {
         if (doc.exists && doc.data().dates) {
@@ -613,9 +602,22 @@
     }
 
     function renderDaysOffList() {
-      The container = document.getElementById('days-off-list');
-      // ... (останалата логика си остава същата)
+      const container = document.getElementById('days-off-list');
+      container.innerHTML = '';
+      const t = translations[currentLang];
+      if (currentDaysOff.length === 0) {
+        container.innerHTML = `<p class="text-xs text-zinc-500">${t.noDaysOff}</p>`;
+        return;
+      }
+      currentDaysOff.forEach(d => {
+        const span = document.createElement('span');
+        span.className = 'inline-flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs px-3 py-1.5 rounded-xl font-bold';
+        span.innerHTML = `${d} <button onclick="removeDayOff('${d}')" class="text-red-400 hover:text-red-300 ml-1">&times;</button>`;
+        container.appendChild(span);
+      });
     }
+
+    lucide.createIcons();
   </script>
 </body>
 </html>
