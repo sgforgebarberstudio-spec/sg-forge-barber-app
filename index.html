@@ -228,8 +228,10 @@
       cleanDuration: 5, 
       breakStart: "14:00", 
       breakEnd: "16:00",
-      sundayStart: "09:00",
-      sundayEnd: "14:00"
+      sunStartTime: "09:00",
+      sunEndTime: "14:00",
+      sunServiceDuration: 60,
+      sunCleanDuration: 5
     };
     let daysOffList = [];
     let isRegisterMode = false;
@@ -449,18 +451,21 @@
 
     function generateTimeSlots() {
       const slots = [];
-      const totalSlotTime = Number(scheduleSettings.serviceDuration) + Number(scheduleSettings.cleanDuration);
-      
       const isSunday = new Date(selectedDate).getDay() === 0;
 
+      const serviceDuration = isSunday ? (Number(scheduleSettings.sunServiceDuration) || Number(scheduleSettings.serviceDuration)) : Number(scheduleSettings.serviceDuration);
+      const cleanDuration = isSunday ? (Number(scheduleSettings.sunCleanDuration) || Number(scheduleSettings.cleanDuration)) : Number(scheduleSettings.cleanDuration);
+      
+      const totalSlotTime = serviceDuration + cleanDuration;
+      
       let start = scheduleSettings.startTime;
       let end = scheduleSettings.endTime;
       let bStart = scheduleSettings.breakStart;
       let bEnd = scheduleSettings.breakEnd;
 
       if (isSunday) {
-        start = scheduleSettings.sundayStart || "09:00";  
-        end = scheduleSettings.sundayEnd || "14:00";    
+        start = scheduleSettings.sunStartTime || "09:00";  
+        end = scheduleSettings.sunEndTime || "14:00";    
         bStart = "00:00"; 
         bEnd = "00:00";   
       }
@@ -475,7 +480,7 @@
       const breakStartMin = bStartH * 60 + bStartM;
       const breakEndMin = bEndH * 60 + bEndM;
 
-      while (currentMin + Number(scheduleSettings.serviceDuration) <= endMin) {
+      while (currentMin + serviceDuration <= endMin) {
         if (!(bStart !== "00:00" && bEnd !== "00:00" && currentMin >= breakStartMin && currentMin < breakEndMin)) {
           const slotH = String(Math.floor(currentMin / 60)).padStart(2, '0');
           const slotM = String(currentMin % 60).padStart(2, '0');
