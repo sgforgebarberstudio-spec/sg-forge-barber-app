@@ -43,10 +43,10 @@
 
   <main class="max-w-4xl mx-auto p-4 mt-6 space-y-6">
     
-    <!-- Настройки на график -->
+    <!-- Настройки на стандартен график -->
     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
       <h2 id="txt-settings-title" class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
-        <i data-lucide="settings" class="w-4 h-4 text-zinc-400"></i> Настройки на график & Дезинфекция
+        <i data-lucide="settings" class="w-4 h-4 text-zinc-400"></i> Стандартен график (Пон - Съб)
       </h2>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
         <div>
@@ -74,10 +74,37 @@
           <input type="time" id="set-break-end" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
         </div>
       </div>
-      <button onclick="saveScheduleSettings()" id="txt-save-btn" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl transition text-xs">
-        Запази новия график
-      </button>
     </div>
+
+    <!-- Настройки за Неделя -->
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4 border-l-4 border-l-emerald-500">
+      <h2 id="txt-sunday-title" class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
+        <i data-lucide="sun" class="w-4 h-4 text-emerald-400"></i> Специален график за Неделя
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+        <div>
+          <label id="txt-sun-start" class="block text-zinc-400 mb-1">Начало (Неделя)</label>
+          <input type="time" id="set-sun-start" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" value="09:00" />
+        </div>
+        <div>
+          <label id="txt-sun-end" class="block text-zinc-400 mb-1">Край (Неделя)</label>
+          <input type="time" id="set-sun-end" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" value="14:00" />
+        </div>
+        <div>
+          <label id="txt-sun-service" class="block text-zinc-400 mb-1">Подстригване (минути)</label>
+          <input type="number" id="set-sun-service" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" value="60" />
+        </div>
+        <div>
+          <label id="txt-sun-clean" class="block text-zinc-400 mb-1">Дезинфекция (минути)</label>
+          <input type="number" id="set-sun-clean" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" value="5" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Бутон за запазване на всички настройки -->
+    <button onclick="saveScheduleSettings()" id="txt-save-btn" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3 rounded-xl transition text-sm shadow-lg">
+      Запази всички настройки
+    </button>
 
     <!-- Почивни дни -->
     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
@@ -174,7 +201,11 @@
       serviceDuration: 30,
       cleanDuration: 15,
       breakStart: "13:00",
-      breakEnd: "14:00"
+      breakEnd: "14:00",
+      sunStartTime: "09:00",
+      sunEndTime: "14:00",
+      sunServiceDuration: 60,
+      sunCleanDuration: 5
     };
     let currentDaysOff = [];
 
@@ -187,14 +218,19 @@
         subtitle: "Административен Панел",
         logout: "Изход",
         langBtn: "ES 🇪🇸",
-        settingsTitle: "Настройки на график & Дезинфекция",
+        settingsTitle: "Стандартен график (Пон - Съб)",
+        sundayTitle: "Специален график за Неделя",
+        sunStart: "Начало (Неделя)",
+        sunEnd: "Край (Неделя)",
+        sunService: "Подстригване (минути)",
+        sunClean: "Дезинфекция (минути)",
         startTime: "Начало на деня",
         endTime: "Край на деня",
         serviceDuration: "Подстригване (минути)",
         cleanDuration: "Дезинфекция (минути)",
         breakStart: "Почивка от",
         breakEnd: "Почивка до",
-        saveBtn: "Запази новия график",
+        saveBtn: "Запази всички настройки",
         daysOffTitle: "Почивни дни (Избор кога не работиш)",
         addOffBtn: "Маркирай като почивен ден",
         manualTitle: "Ръчно добавяне на час",
@@ -218,7 +254,7 @@
         attendedStat: "Явил се",
         missedStat: "Не се яви",
         alertWrongCode: "Грешен код!",
-        alertSaved: "Графикът е обновен успешно!",
+        alertSaved: "Настройките бяха обновени успешно!",
         alertSelectDate: "Изберете дата от календара!",
         alertFillManual: "Моля, попълнете име, телефон, дата и час!",
         alertBookingAdded: "Часът е добавен успешно и вече е отбелязан като зает!"
@@ -231,14 +267,19 @@
         subtitle: "Panel Administrativo",
         logout: "Salir",
         langBtn: "BG 🇧🇬",
-        settingsTitle: "Configuración de Horarios y Limpieza",
+        settingsTitle: "Horario estándar (Lun - Sáb)",
+        sundayTitle: "Horario especial para Domingo",
+        sunStart: "Inicio (Domingo)",
+        sunEnd: "Fin (Domingo)",
+        sunService: "Corte (minutos)",
+        sunClean: "Limpieza (minutos)",
         startTime: "Inicio del día",
         endTime: "Fin del día",
         serviceDuration: "Corte (minutos)",
         cleanDuration: "Limpieza (minutos)",
         breakStart: "Descanso de",
         breakEnd: "Descanso hasta",
-        saveBtn: "Guardar nuevo horario",
+        saveBtn: "Guardar todas las configuraciones",
         daysOffTitle: "Días libres (Selecciona cuándo no trabajas)",
         addOffBtn: "Marcar como día libre",
         manualTitle: "Añadir cita manualmente",
@@ -262,7 +303,7 @@
         attendedStat: "Asistió",
         missedStat: "No asistió",
         alertWrongCode: "¡Código incorrecto!",
-        alertSaved: "¡El horario se ha actualizado correctamente!",
+        alertSaved: "¡Las configuraciones se actualizaron con éxito!",
         alertSelectDate: "¡Selecciona una fecha del calendario!",
         alertFillManual: "¡Por favor complete el nombre, teléfono, fecha y hora!",
         alertBookingAdded: "¡Cita añadida con éxito y marcada como ocupada!"
@@ -289,6 +330,7 @@
       document.getElementById('txt-subtitle').innerText = t.subtitle;
       document.getElementById('txt-logout').innerText = t.logout;
       document.getElementById('lang-btn-text').innerText = t.langBtn;
+      
       document.getElementById('txt-settings-title').innerHTML = `<i data-lucide="settings" class="w-4 h-4 text-zinc-400"></i> ${t.settingsTitle}`;
       document.getElementById('txt-start-time').innerText = t.startTime;
       document.getElementById('txt-end-time').innerText = t.endTime;
@@ -296,6 +338,13 @@
       document.getElementById('txt-clean-dur').innerText = t.cleanDuration;
       document.getElementById('txt-break-start').innerText = t.breakStart;
       document.getElementById('txt-break-end').innerText = t.breakEnd;
+      
+      document.getElementById('txt-sunday-title').innerHTML = `<i data-lucide="sun" class="w-4 h-4 text-emerald-400"></i> ${t.sundayTitle}`;
+      document.getElementById('txt-sun-start').innerText = t.sunStart;
+      document.getElementById('txt-sun-end').innerText = t.sunEnd;
+      document.getElementById('txt-sun-service').innerText = t.sunService;
+      document.getElementById('txt-sun-clean').innerText = t.sunClean;
+
       document.getElementById('txt-save-btn').innerText = t.saveBtn;
       document.getElementById('txt-days-off-title').innerHTML = `<i data-lucide="calendar-off" class="w-4 h-4 text-zinc-400"></i> ${t.daysOffTitle}`;
       document.getElementById('txt-add-off-btn').innerText = t.addOffBtn;
@@ -450,25 +499,37 @@
         return;
       }
 
-      const startMin = timeToMins(currentSettings.startTime || "09:00");
-      const endMin = timeToMins(currentSettings.endTime || "19:00");
-      const serviceDur = Number(currentSettings.serviceDuration) || 30;
-      const cleanDur = Number(currentSettings.cleanDuration) || 15;
-      const slotStep = serviceDur + cleanDur;
+      // Проверка дали датата е Неделя (0)
+      const selectedDateObj = new Date(dateVal);
+      const isSunday = selectedDateObj.getDay() === 0;
 
-      const breakStartMin = currentSettings.breakStart ? timeToMins(currentSettings.breakStart) : null;
-      const breakEndMin = currentSettings.breakEnd ? timeToMins(currentSettings.breakEnd) : null;
+      // Динамично избиране на променливите според деня
+      let activeStartTime = isSunday ? (currentSettings.sunStartTime || "09:00") : (currentSettings.startTime || "09:00");
+      let activeEndTime = isSunday ? (currentSettings.sunEndTime || "14:00") : (currentSettings.endTime || "19:00");
+      let activeServiceDur = isSunday ? (Number(currentSettings.sunServiceDuration) || 60) : (Number(currentSettings.serviceDuration) || 30);
+      let activeCleanDur = isSunday ? (Number(currentSettings.sunCleanDuration) || 5) : (Number(currentSettings.cleanDuration) || 15);
+      
+      // Обедна почивка само за нормални дни
+      let activeBreakStart = isSunday ? null : currentSettings.breakStart;
+      let activeBreakEnd = isSunday ? null : currentSettings.breakEnd;
+
+      const startMin = timeToMins(activeStartTime);
+      const endMin = timeToMins(activeEndTime);
+      const slotStep = activeServiceDur + activeCleanDur;
+
+      const breakStartMin = activeBreakStart ? timeToMins(activeBreakStart) : null;
+      const breakEndMin = activeBreakEnd ? timeToMins(activeBreakEnd) : null;
 
       const bookedTimes = globalItems
         .filter(item => item.date === dateVal && (!item.status || item.status === 'pending' || item.status === 'attended'))
         .map(item => item.time);
 
       let generatedSlots = [];
-      for (let m = startMin; m + serviceDur <= endMin; m += slotStep) {
+      for (let m = startMin; m + activeServiceDur <= endMin; m += slotStep) {
         const slotTimeStr = minsToTime(m);
 
         if (breakStartMin !== null && breakEndMin !== null) {
-          if (m < breakEndMin && (m + serviceDur) > breakStartMin) {
+          if (m < breakEndMin && (m + activeServiceDur) > breakStartMin) {
             continue;
           }
         }
@@ -494,6 +555,7 @@
     }
 
     function timeToMins(timeStr) {
+      if (!timeStr) return 0;
       const [h, m] = timeStr.split(':').map(Number);
       return h * 60 + m;
     }
@@ -540,12 +602,18 @@
         if (doc.exists) {
           const data = doc.data();
           currentSettings = data;
+          
           document.getElementById('set-start-time').value = data.startTime || '09:00';
           document.getElementById('set-end-time').value = data.endTime || '19:00';
           document.getElementById('set-service-duration').value = data.serviceDuration || 30;
           document.getElementById('set-clean-duration').value = data.cleanDuration || 15;
           document.getElementById('set-break-start').value = data.breakStart || '13:00';
           document.getElementById('set-break-end').value = data.breakEnd || '14:00';
+          
+          document.getElementById('set-sun-start').value = data.sunStartTime || '09:00';
+          document.getElementById('set-sun-end').value = data.sunEndTime || '14:00';
+          document.getElementById('set-sun-service').value = data.sunServiceDuration || 60;
+          document.getElementById('set-sun-clean').value = data.sunCleanDuration || 5;
         }
         updateManualAvailableSlots();
       });
@@ -558,12 +626,22 @@
       const cleanDuration = Number(document.getElementById('set-clean-duration').value);
       const breakStart = document.getElementById('set-break-start').value;
       const breakEnd = document.getElementById('set-break-end').value;
+
+      const sunStartTime = document.getElementById('set-sun-start').value;
+      const sunEndTime = document.getElementById('set-sun-end').value;
+      const sunServiceDuration = Number(document.getElementById('set-sun-service').value);
+      const sunCleanDuration = Number(document.getElementById('set-sun-clean').value);
+
       const t = translations[currentLang];
 
       db.collection('settings').doc('schedule').set({
-        startTime, endTime, serviceDuration, cleanDuration, breakStart, breakEnd
+        startTime, endTime, serviceDuration, cleanDuration, breakStart, breakEnd,
+        sunStartTime, sunEndTime, sunServiceDuration, sunCleanDuration
       }).then(() => {
-        currentSettings = { startTime, endTime, serviceDuration, cleanDuration, breakStart, breakEnd };
+        currentSettings = { 
+          startTime, endTime, serviceDuration, cleanDuration, breakStart, breakEnd,
+          sunStartTime, sunEndTime, sunServiceDuration, sunCleanDuration
+        };
         alert(t.alertSaved);
         updateManualAvailableSlots();
       }).catch(err => alert('Грешка: ' + err.message));
