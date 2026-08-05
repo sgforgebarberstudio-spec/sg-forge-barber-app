@@ -93,6 +93,38 @@
       <div id="days-off-list" class="flex flex-wrap gap-2 pt-2"></div>
     </div>
 
+    <!-- Ръчно добавяне на час от админа -->
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
+      <h2 id="txt-manual-title" class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
+        <i data-lucide="user-plus" class="w-4 h-4 text-emerald-400"></i> Ръчно добавяне на час
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+        <div>
+          <label id="txt-manual-name" class="block text-zinc-400 mb-1">Име на клиента</label>
+          <input type="text" id="manual-client-name" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" placeholder="Иван Иванов" />
+        </div>
+        <div>
+          <label id="txt-manual-phone" class="block text-zinc-400 mb-1">Телефон</label>
+          <input type="text" id="manual-client-phone" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" placeholder="089xxxxxxx" />
+        </div>
+        <div>
+          <label id="txt-manual-date" class="block text-zinc-400 mb-1">Дата</label>
+          <input type="date" id="manual-date" onclick="this.showPicker && this.showPicker()" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white cursor-pointer [&::-webkit-calendar-picker-indicator]:invert" />
+        </div>
+        <div>
+          <label id="txt-manual-time" class="block text-zinc-400 mb-1">Час</label>
+          <input type="time" id="manual-time" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
+        </div>
+      </div>
+      <div>
+        <label id="txt-manual-email" class="block text-zinc-400 mb-1 text-xs">Имейл (по желание)</label>
+        <input type="email" id="manual-client-email" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white text-xs" placeholder="client@email.com" />
+      </div>
+      <button onclick="manuallyAddBooking()" id="txt-manual-btn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-bold py-2.5 rounded-xl transition text-xs">
+        Запиши час ръчно
+      </button>
+    </div>
+
     <!-- Активни запазени часове (В реално време) -->
     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
       <div class="flex justify-between items-center">
@@ -155,6 +187,13 @@
         saveBtn: "Запази новия график",
         daysOffTitle: "Почивни дни (Избор кога не работиш)",
         addOffBtn: "Маркирай като почивен ден",
+        manualTitle: "Ръчно добавяне на час",
+        manualName: "Име на клиента",
+        manualPhone: "Телефон",
+        manualDate: "Дата",
+        manualTime: "Час",
+        manualEmail: "Имейл (по желание)",
+        manualBtn: "Запиши час ръчно",
         activeBookingsTitle: "Активни запазени часове",
         clientStatsTitle: "История и статистика по клиенти",
         loadingActive: "Зареждане в реално време...",
@@ -168,7 +207,9 @@
         missedStat: "Не се яви",
         alertWrongCode: "Грешен код!",
         alertSaved: "Графикът е обновен успешно!",
-        alertSelectDate: "Изберете дата от календара!"
+        alertSelectDate: "Изберете дата от календара!",
+        alertFillManual: "Моля, попълнете име, телефон, дата и час!",
+        alertBookingAdded: "Часът е добавен успешно!"
       },
       es: {
         pageTitle: "SG Forge - Panel Administrativo",
@@ -188,6 +229,13 @@
         saveBtn: "Guardar nuevo horario",
         daysOffTitle: "Días libres (Selecciona cuándo no trabajas)",
         addOffBtn: "Marcar como día libre",
+        manualTitle: "Añadir cita manualmente",
+        manualName: "Nombre del cliente",
+        manualPhone: "Teléfono",
+        manualDate: "Fecha",
+        manualTime: "Hora",
+        manualEmail: "Correo electrónico (opcional)",
+        manualBtn: "Guardar cita manualmente",
         activeBookingsTitle: "Reservas activas",
         clientStatsTitle: "Historial y estadísticas de clientes",
         loadingActive: "Cargando en tiempo real...",
@@ -201,7 +249,9 @@
         missedStat: "No asistió",
         alertWrongCode: "¡Código incorrecto!",
         alertSaved: "¡El horario se ha actualizado correctamente!",
-        alertSelectDate: "¡Selecciona una fecha del calendario!"
+        alertSelectDate: "¡Selecciona una fecha del calendario!",
+        alertFillManual: "¡Por favor complete el nombre, teléfono, fecha y hora!",
+        alertBookingAdded: "¡Cita añadida con éxito!"
       }
     };
 
@@ -234,6 +284,13 @@
       document.getElementById('txt-save-btn').innerText = t.saveBtn;
       document.getElementById('txt-days-off-title').innerHTML = `<i data-lucide="calendar-off" class="w-4 h-4 text-zinc-400"></i> ${t.daysOffTitle}`;
       document.getElementById('txt-add-off-btn').innerText = t.addOffBtn;
+      document.getElementById('txt-manual-title').innerHTML = `<i data-lucide="user-plus" class="w-4 h-4 text-emerald-400"></i> ${t.manualTitle}`;
+      document.getElementById('txt-manual-name').innerText = t.manualName;
+      document.getElementById('txt-manual-phone').innerText = t.manualPhone;
+      document.getElementById('txt-manual-date').innerText = t.manualDate;
+      document.getElementById('txt-manual-time').innerText = t.manualTime;
+      document.getElementById('txt-manual-email').innerText = t.manualEmail;
+      document.getElementById('txt-manual-btn').innerText = t.manualBtn;
       document.getElementById('txt-active-bookings-title').innerHTML = `<i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i> ${t.activeBookingsTitle}`;
       document.getElementById('txt-client-stats-title').innerHTML = `<i data-lucide="users" class="w-4 h-4 text-zinc-400"></i> ${t.clientStatsTitle}`;
 
@@ -356,6 +413,37 @@
 
     function updateBookingStatus(id, status) {
       db.collection('bookings').doc(id).update({ status: status }).catch(err => alert('Грешка: ' + err.message));
+    }
+
+    function manuallyAddBooking() {
+      const clientName = document.getElementById('manual-client-name').value.trim();
+      const clientPhone = document.getElementById('manual-client-phone').value.trim();
+      const date = document.getElementById('manual-date').value;
+      const time = document.getElementById('manual-time').value;
+      const clientEmail = document.getElementById('manual-client-email').value.trim();
+      const t = translations[currentLang];
+
+      if (!clientName || !clientPhone || !date || !time) {
+        alert(t.alertFillManual);
+        return;
+      }
+
+      db.collection('bookings').add({
+        clientName,
+        clientPhone,
+        date,
+        time,
+        clientEmail,
+        status: 'pending',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        alert(t.alertBookingAdded);
+        document.getElementById('manual-client-name').value = '';
+        document.getElementById('manual-client-phone').value = '';
+        document.getElementById('manual-date').value = '';
+        document.getElementById('manual-time').value = '';
+        document.getElementById('manual-client-email').value = '';
+      }).catch(err => alert('Грешка: ' + err.message));
     }
 
     function loadSettings() {
