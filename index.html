@@ -176,6 +176,9 @@
         <div>
           <label class="block text-[11px] text-zinc-400 mb-1">Парола</label>
           <input type="password" id="auth-password" placeholder="••••••••" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none" />
+          <div class="text-right mt-1.5">
+            <button onclick="resetPassword()" type="button" class="text-[10px] text-zinc-500 hover:text-white underline transition">Забравена парола?</button>
+          </div>
         </div>
         <button id="auth-action-btn" onclick="handleEmailAuth()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 rounded-xl text-xs transition">Вход</button>
       </div>
@@ -672,6 +675,30 @@
 
     function closeMyAppointmentsModal() {
       document.getElementById('my-appointments-modal').classList.add('hidden');
+    }
+
+    // Функция за възстановяване на забравена парола
+    function resetPassword() {
+      const emailInput = document.getElementById('auth-email').value.trim();
+      
+      if (!emailInput) {
+        return showCustomAlert('Внимание', 'Моля, въведете вашия имейл адрес в полето по-горе, за да ви изпратим линк за нова парола.');
+      }
+
+      auth.sendPasswordResetEmail(emailInput)
+        .then(() => {
+          showCustomAlert('Успешно', 'Изпратихме ви линк за възстановяване на паролата. Моля, проверете вашия имейл (включително папката за Спам).', false);
+          closeAuthModal();
+        })
+        .catch(err => {
+          let errorMsg = 'Възникна грешка. Опитайте отново.';
+          if (err.code === 'auth/user-not-found') {
+            errorMsg = 'Няма регистриран профил с този имейл.';
+          } else if (err.code === 'auth/invalid-email') {
+            errorMsg = 'Невалиден формат на имейл адреса.';
+          }
+          showCustomAlert('Грешка', errorMsg);
+        });
     }
 
     lucide.createIcons();
