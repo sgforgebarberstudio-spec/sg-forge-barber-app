@@ -117,25 +117,6 @@
     </div>
   </div>
 
-  <!-- Стилен Модален прозорец за Потвърждение при Отказ -->
-  <div id="confirm-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center hidden z-[130] p-4">
-    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative">
-      <div class="w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-2">
-        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
-      </div>
-      <h3 id="confirm-modal-title" class="text-md font-bold text-white uppercase tracking-wider">Отказ на запазен час</h3>
-      <p id="confirm-modal-desc" class="text-xs text-zinc-400">Сигурни ли сте, че искате да се откажете от този час? Часът ще бъде освободен за други клиенти.</p>
-      <div class="flex gap-2.5 pt-2">
-        <button onclick="closeCustomConfirm(false)" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2.5 rounded-xl text-xs transition">
-          Запази го
-        </button>
-        <button id="confirm-modal-yes-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-lg shadow-red-500/20">
-          Да, откажи го
-        </button>
-      </div>
-    </div>
-  </div>
-
   <!-- Модален прозорец за Успешна Резервация -->
   <div id="success-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center hidden z-[120] p-4">
     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative">
@@ -180,6 +161,20 @@
             <button onclick="resetPassword()" type="button" class="text-[10px] text-zinc-500 hover:text-white underline transition">Забравена парола?</button>
           </div>
         </div>
+
+        <!-- Допълнително поле за телефон (показва се само при Регистрация) -->
+        <div id="reg-phone-container" class="hidden">
+          <label class="block text-[11px] text-zinc-400 mb-1">Телефонен номер (за SMS код)</label>
+          <input type="tel" id="reg-phone" placeholder="+35989xxxxxxx" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none" />
+        </div>
+
+        <!-- Поле за въвеждане на получения SMS код (показва се след заявка) -->
+        <div id="sms-code-container" class="hidden space-y-2">
+          <label class="block text-[11px] text-emerald-400 mb-1 font-bold">Въведете 6-цифрения код от SMS</label>
+          <input type="text" id="sms-code" placeholder="123456" class="w-full bg-zinc-950 border border-emerald-500/50 rounded-xl p-2.5 text-xs text-white text-center font-mono tracking-widest focus:outline-none" />
+          <button onclick="verifySmsCode()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-xs transition">Потвърди кода</button>
+        </div>
+
         <button id="auth-action-btn" onclick="handleEmailAuth()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 rounded-xl text-xs transition">Вход</button>
       </div>
 
@@ -188,6 +183,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Невидим елемент, изискван от Firebase за защита срещу спам (reCAPTCHA) -->
+  <div id="recaptcha-container"></div>
 
   <!-- Модален прозорец "Моите часове" -->
   <div id="my-appointments-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50 p-4">
@@ -224,21 +222,10 @@
     let currentUser = null;
     let selectedDate = '';
     let selectedTime = '';
-    let scheduleSettings = { 
-      startTime: "09:00", 
-      endTime: "22:00", 
-      serviceDuration: 60, 
-      cleanDuration: 5, 
-      breakStart: "14:00", 
-      breakEnd: "16:00",
-      sunStartTime: "09:00",
-      sunEndTime: "14:00",
-      sunServiceDuration: 60,
-      sunCleanDuration: 5
-    };
+    let scheduleSettings = {};
     let daysOffList = [];
     let isRegisterMode = false;
-    let confirmCallback = null;
+    let confirmationResult = null; // Пази данните за SMS верификацията
 
     function showCustomAlert(title, message, isError = true) {
       document.getElementById('alert-modal-title').innerText = title;
@@ -259,27 +246,6 @@
       document.getElementById('alert-modal').classList.add('hidden');
     }
 
-    function showCustomConfirm(title, message, onConfirm) {
-      document.getElementById('confirm-modal-title').innerText = title;
-      document.getElementById('confirm-modal-desc').innerText = message;
-      confirmCallback = onConfirm;
-      document.getElementById('confirm-modal').classList.remove('hidden');
-      
-      const yesBtn = document.getElementById('confirm-modal-yes-btn');
-      yesBtn.onclick = () => {
-        closeCustomConfirm(true);
-      };
-      lucide.createIcons();
-    }
-
-    function closeCustomConfirm(result) {
-      document.getElementById('confirm-modal').classList.add('hidden');
-      if (result && typeof confirmCallback === 'function') {
-        confirmCallback();
-      }
-      confirmCallback = null;
-    }
-
     window.onload = () => {
       const progressBar = document.getElementById('splash-progress');
       if (progressBar) {
@@ -296,6 +262,12 @@
       }, 1200);
 
       loadSettingsAndDaysOff();
+      
+      // Инициализиране на reCAPTCHA за сигурност при SMS пращане
+      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+        'size': 'invisible'
+      });
+
       auth.onAuthStateChanged(user => {
         currentUser = user;
         updateHeaderAuthUI();
@@ -315,7 +287,7 @@
           if (nameInput && data.name) nameInput.value = data.name;
           if (phoneInput && data.phone) phoneInput.value = data.phone;
         }
-      }).catch(err => console.log('Грешка при зареждане на профил:', err));
+      });
     }
 
     function updateHeaderAuthUI() {
@@ -353,13 +325,22 @@
     }
     function closeAuthModal() {
       document.getElementById('auth-modal').classList.add('hidden');
+      document.getElementById('sms-code-container').classList.add('hidden');
     }
 
     function toggleAuthMode() {
       isRegisterMode = !isRegisterMode;
-      document.getElementById('auth-modal-title').innerText = isRegisterMode ? 'Регистрация' : 'Вход в профила';
-      document.getElementById('auth-action-btn').innerText = isRegisterMode ? 'Регистрирай се' : 'Вход';
+      document.getElementById('auth-modal-title').innerText = isRegisterMode ? 'Регистрация с телефонен код' : 'Вход в профила';
+      document.getElementById('auth-action-btn').innerText = isRegisterMode ? 'Изпрати SMS код' : 'Вход';
       document.getElementById('auth-toggle-link').innerText = isRegisterMode ? 'Вече имате профил? Влезте' : 'Нямате профил? Регистрирайте се';
+      
+      const phoneContainer = document.getElementById('reg-phone-container');
+      if (isRegisterMode) {
+        phoneContainer.classList.remove('hidden');
+      } else {
+        phoneContainer.classList.add('hidden');
+        document.getElementById('sms-code-container').classList.add('hidden');
+      }
     }
 
     function loginWithGoogle() {
@@ -376,13 +357,58 @@
       if (!email || !password) return showCustomAlert('Внимание', 'Попълнете имейл и парола!');
 
       if (isRegisterMode) {
-        auth.createUserWithEmailAndPassword(email, password).then(() => {
-          closeAuthModal();
-        }).catch(err => showCustomAlert('Грешка при регистрация', err.message));
+        const phone = document.getElementById('reg-phone').value.trim();
+        if (!phone) return showCustomAlert('Внимание', 'Моля, въведете телефонен номер за верификация!');
+
+        const appVerifier = window.recaptchaVerifier;
+        
+        // Стъпка 1: Изпращане на SMS код до телефона
+        auth.signInWithPhoneNumber(phone, appVerifier)
+          .then(result => {
+            confirmationResult = result;
+            document.getElementById('sms-code-container').classList.remove('hidden');
+            document.getElementById('auth-action-btn').classList.add('hidden');
+            showCustomAlert('SMS Изпратен', 'Въведете 6-цифрения код, получен на вашия телефон.', false);
+          })
+          .catch(error => {
+            showCustomAlert('Грешка при SMS', error.message);
+          });
+
       } else {
+        // Обикновен вход с имейл и парола
         auth.signInWithEmailAndPassword(email, password).then(() => {
           closeAuthModal();
         }).catch(err => showCustomAlert('Грешка при вход', err.message));
+      }
+    }
+
+    // Стъпка 2: Потвърждаване на SMS кода и създаване на профила
+    function verifySmsCode() {
+      const code = document.getElementById('sms-code').value.trim();
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim();
+
+      if (!code) return showCustomAlert('Внимание', 'Въведете кода от съобщението!');
+
+      if (confirmationResult) {
+        confirmationResult.confirm(code).then(result => {
+          // Телефонът е потвърден. Сега създаваме акаунта с имейл и парола
+          auth.createUserWithEmailAndPassword(email, password)
+            .then(userCred => {
+              // Записваме телефона и имейла в базата данни
+              db.collection('users').doc(userCred.user.uid).set({
+                email: email,
+                phone: phone,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+              closeAuthModal();
+              showCustomAlert('Успех', 'Регистрацията е успешна!', false);
+            })
+            .catch(err => showCustomAlert('Грешка при създаване на профил', err.message));
+        }).catch(error => {
+          showCustomAlert('Грешка', 'Грешен код за верификация.');
+        });
       }
     }
 
@@ -394,9 +420,7 @@
 
     function loadSettingsAndDaysOff() {
       db.collection('settings').doc('schedule').get().then(doc => {
-        if (doc.exists) {
-          scheduleSettings = { ...scheduleSettings, ...doc.data() };
-        }
+        if (doc.exists) scheduleSettings = doc.data();
       });
       db.collection('settings').doc('daysOff').get().then(doc => {
         if (doc.exists && doc.data().dates) daysOffList = doc.data().dates;
@@ -407,24 +431,16 @@
     function renderCalendar() {
       const grid = document.getElementById('calendar-grid');
       grid.innerHTML = '';
-      
       const now = new Date();
       const year = now.getFullYear();
       const month = now.getMonth();
       const daysInMonth = new Date(year, month + 1, 0).getDate();
       
-      const todayY = now.getFullYear();
-      const todayM = String(now.getMonth() + 1).padStart(2, '0');
-      const todayD = String(now.getDate()).padStart(2, '0');
-      const todayStr = `${todayY}-${todayM}-${todayD}`;
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
       for (let day = 1; day <= daysInMonth; day++) {
         const d = new Date(year, month, day);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        const dateStr = `${yyyy}-${mm}-${dd}`;
-
+        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         const dayName = d.toLocaleDateString('bg-BG', { weekday: 'short' });
         const isOff = daysOffList.includes(dateStr);
         const isPast = dateStr < todayStr;
@@ -443,107 +459,12 @@
             selectedDate = dateStr;
             selectedTime = '';
             document.getElementById('client-form').classList.add('hidden');
-            document.getElementById('login-required-msg').classList.add('hidden');
             renderCalendar();
             fetchTimeSlots();
           };
         }
         grid.appendChild(btn);
       }
-    }
-
-    function generateTimeSlots() {
-      const slots = [];
-      const isSunday = new Date(selectedDate).getDay() === 0;
-
-      const serviceDuration = isSunday ? (Number(scheduleSettings.sunServiceDuration) || Number(scheduleSettings.serviceDuration)) : Number(scheduleSettings.serviceDuration);
-      const cleanDuration = isSunday ? (Number(scheduleSettings.sunCleanDuration) || Number(scheduleSettings.cleanDuration)) : Number(scheduleSettings.cleanDuration);
-      
-      const totalSlotTime = serviceDuration + cleanDuration;
-      
-      let start = scheduleSettings.startTime;
-      let end = scheduleSettings.endTime;
-      let bStart = scheduleSettings.breakStart;
-      let bEnd = scheduleSettings.breakEnd;
-
-      if (isSunday) {
-        start = scheduleSettings.sunStartTime || "09:00";  
-        end = scheduleSettings.sunEndTime || "14:00";    
-        bStart = "00:00"; 
-        bEnd = "00:00";   
-      }
-
-      let [h, m] = start.split(':').map(Number);
-      let [endH, endM] = end.split(':').map(Number);
-      let currentMin = h * 60 + m;
-      const endMin = endH * 60 + endM;
-
-      let [bStartH, bStartM] = bStart.split(':').map(Number);
-      let [bEndH, bEndM] = bEnd.split(':').map(Number);
-      const breakStartMin = bStartH * 60 + bStartM;
-      const breakEndMin = bEndH * 60 + bEndM;
-
-      while (currentMin + serviceDuration <= endMin) {
-        if (!(bStart !== "00:00" && bEnd !== "00:00" && currentMin >= breakStartMin && currentMin < breakEndMin)) {
-          const slotH = String(Math.floor(currentMin / 60)).padStart(2, '0');
-          const slotM = String(currentMin % 60).padStart(2, '0');
-          slots.push(`${slotH}:${slotM}`);
-        }
-        currentMin += totalSlotTime;
-      }
-      return slots;
-    }
-
-    function fetchTimeSlots() {
-      document.getElementById('slots-container').classList.remove('hidden');
-      const grid = document.getElementById('slots-grid');
-      grid.innerHTML = '<p class="col-span-3 text-xs text-zinc-500 text-center py-4">Зареждане на часове...</p>';
-
-      db.collection('bookings').where('date', '==', selectedDate).get().then(snapshot => {
-        let booked = [];
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          if (data.time && data.status !== 'cancelled') {
-            booked.push(data.time);
-          }
-        });
-        const slots = generateTimeSlots();
-
-        grid.innerHTML = '';
-        if (slots.length === 0) {
-          grid.innerHTML = '<p class="col-span-3 text-xs text-zinc-500 text-center py-4">Няма свободни часове за тази дата.</p>';
-          return;
-        }
-
-        slots.forEach(slot => {
-          const isBooked = booked.includes(slot);
-          const btn = document.createElement('button');
-
-          if (isBooked) {
-            btn.className = 'py-2.5 text-xs font-bold rounded-xl border bg-black/40 text-zinc-700 border-zinc-900 cursor-not-allowed line-through';
-            btn.innerText = slot;
-            btn.disabled = true;
-          } else {
-            const isSelected = selectedTime === slot;
-            btn.className = `py-2.5 text-xs font-bold rounded-xl border transition active:scale-95 ${isSelected ? 'bg-white text-black border-white shadow-md' : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-700'}`;
-            btn.innerText = slot;
-            btn.onclick = () => {
-              selectedTime = slot;
-              fetchTimeSlots();
-              if (currentUser) {
-                document.getElementById('client-form').classList.remove('hidden');
-                document.getElementById('login-required-msg').classList.add('hidden');
-                loadUserProfile();
-              } else {
-                document.getElementById('client-form').classList.add('hidden');
-                document.getElementById('login-required-msg').classList.remove('hidden');
-              }
-              document.getElementById('selected-slot-info').innerText = `Избран час: ${selectedDate} в ${selectedTime}`;
-            };
-          }
-          grid.appendChild(btn);
-        });
-      });
     }
 
     function confirmBooking() {
@@ -571,7 +492,7 @@
       }).then(() => {
         document.getElementById('success-modal-desc').innerText = `Успешно запазен час за ${selectedDate} в ${selectedTime}.`;
         document.getElementById('success-modal').classList.remove('hidden');
-      }).catch(err => showCustomAlert('Грешка', 'Грешка при запазване: ' + err.message));
+      });
     }
 
     function closeSuccessModalAndReload() {
@@ -579,126 +500,17 @@
     }
 
     function openMyAppointmentsModal() {
-      if (!currentUser) return;
       document.getElementById('my-appointments-modal').classList.remove('hidden');
-      const listContainer = document.getElementById('client-appointments-list');
-      listContainer.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Зареждане на вашите часове...</p>';
-
-      db.collection('bookings').where('userId', '==', currentUser.uid).get().then(snapshot => {
-        let items = [];
-        snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
-
-        items = items.filter(item => !item.status || item.status === 'pending');
-        items.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
-
-        listContainer.innerHTML = '';
-
-        const infoBanner = document.createElement('div');
-        infoBanner.className = 'bg-zinc-950 border border-zinc-800 p-3 rounded-xl mb-3 text-[11px] text-zinc-400 space-y-1';
-        infoBanner.innerHTML = `
-          <p class="font-bold text-white flex items-center gap-1.5"><i data-lucide="info" class="w-3.5 h-3.5 text-emerald-400"></i> Информация за вашите часове:</p>
-          <p>• Всеки <strong>активен час</strong> може да се откаже до 24 часа преди записа.</p>
-          <p>• За да <strong>промените часа си</strong>, моля откажете настоящия и запазете нов от началния екран.</p>
-        `;
-        listContainer.appendChild(infoBanner);
-
-        if (items.length === 0) {
-          const emptyMsg = document.createElement('p');
-          emptyMsg.className = 'text-xs text-zinc-500 text-center py-4';
-          emptyMsg.innerText = 'Нямате активни запазени часове.';
-          listContainer.appendChild(emptyMsg);
-          lucide.createIcons();
-          return;
-        }
-
-        const now = new Date();
-
-        items.forEach(item => {
-          const appointmentDate = new Date(`${item.date}T${item.time}:00`);
-          const hoursLeft = (appointmentDate - now) / (1000 * 60 * 60);
-          const canCancelOrModify = hoursLeft > 24;
-
-          const itemDiv = document.createElement('div');
-          itemDiv.className = 'py-3.5 border-b border-zinc-800/60 last:border-none flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3';
-          
-          itemDiv.innerHTML = `
-            <div class="space-y-1.5 flex-grow">
-              <div class="flex items-center gap-2">
-                <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> АКТИВЕН ЧАС
-                </span>
-              </div>
-              <p class="font-bold text-white text-sm">${item.date} в <span class="text-emerald-400">${item.time}</span></p>
-              <p class="text-xs text-zinc-400">Клиент: ${item.clientName}</p>
-              
-              ${canCancelOrModify ? `
-                <p class="text-[11px] text-zinc-300 bg-zinc-950/80 p-2 rounded-xl border border-zinc-800 mt-1">
-                  💡 <span class="font-semibold text-white">Искате да смените часа?</span> Натиснете бутона <strong>„Откажи часа“</strong> и след това изберете нова дата и час от календара.
-                </p>
-              ` : `
-                <p class="text-[11px] text-amber-500 bg-amber-500/5 p-2 rounded-xl border border-amber-500/20 mt-1">
-                  🔒 <span class="font-semibold">Заключен час:</span> Остават по-малко от 24 часа. Отмяна или промяна вече не са възможни.
-                </p>
-              `}
-            </div>
-            
-            <div class="w-full sm:w-auto flex justify-end">
-              ${canCancelOrModify ? `
-                <button onclick="cancelClientBooking('${item.id}')" class="w-full sm:w-auto bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3.5 py-2 rounded-xl font-bold transition text-xs flex items-center justify-center gap-1.5 shadow-md">
-                  <i data-lucide="x-circle" class="w-4 h-4"></i> Откажи часа
-                </button>
-              ` : `
-                <span class="bg-zinc-800/80 text-zinc-500 border border-zinc-700 px-3.5 py-2 rounded-xl font-bold text-[11px] cursor-not-allowed">
-                  Заключен
-                </span>
-              `}
-            </div>
-          `;
-          listContainer.appendChild(itemDiv);
-        });
-
-        lucide.createIcons();
-      });
     }
-
-    function cancelClientBooking(bookingId) {
-      showCustomConfirm('Отказ на запазен час', 'Сигурни ли сте, че искате да се откажете от този час? Часът ще бъде освободен за други клиенти.', () => {
-        db.collection('bookings').doc(bookingId).update({
-          status: 'cancelled'
-        }).then(() => {
-          openMyAppointmentsModal();
-        }).catch(err => {
-          showCustomAlert('Грешка', 'Грешка при отмяна на часа: ' + err.message);
-        });
-      });
-    }
-
     function closeMyAppointmentsModal() {
       document.getElementById('my-appointments-modal').classList.add('hidden');
     }
-
-    // Функция за възстановяване на забравена парола
     function resetPassword() {
-      const emailInput = document.getElementById('auth-email').value.trim();
-      
-      if (!emailInput) {
-        return showCustomAlert('Внимание', 'Моля, въведете вашия имейл адрес в полето по-горе, за да ви изпратим линк за нова парола.');
-      }
-
-      auth.sendPasswordResetEmail(emailInput)
-        .then(() => {
-          showCustomAlert('Успешно', 'Изпратихме ви линк за възстановяване на паролата. Моля, проверете вашия имейл (включително папката за Спам).', false);
-          closeAuthModal();
-        })
-        .catch(err => {
-          let errorMsg = 'Възникна грешка. Опитайте отново.';
-          if (err.code === 'auth/user-not-found') {
-            errorMsg = 'Няма регистриран профил с този имейл.';
-          } else if (err.code === 'auth/invalid-email') {
-            errorMsg = 'Невалиден формат на имейл адреса.';
-          }
-          showCustomAlert('Грешка', errorMsg);
-        });
+      const email = document.getElementById('auth-email').value.trim();
+      if (!email) return showCustomAlert('Внимание', 'Въведете имейл адрес първо.');
+      auth.sendPasswordResetEmail(email).then(() => {
+        showCustomAlert('Изпратено', 'Линкът за възстановяване е изпратен на вашия имейл.', false);
+      });
     }
 
     lucide.createIcons();
