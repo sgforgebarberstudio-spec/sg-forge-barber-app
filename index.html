@@ -4,12 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>SG Forge - Barber Studio</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans & Библиотеки -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
   <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    
     @keyframes fadeInUp {
       from {
         opacity: 0;
@@ -23,6 +36,7 @@
     .animate-fade-in-up {
       animation: fadeInUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
+
     @keyframes modalScale {
       from {
         opacity: 0;
@@ -36,102 +50,497 @@
     .animate-modal {
       animation: modalScale 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
+
+    /* 💈 КЛАСИЧЕСКИ БРЪСНАРСКИ ПОЛЮС */
+    .barber-pole-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 70%;
+      aspect-ratio: 1 / 2.2;
+      position: relative;
+    }
+    .barber-pole-cap-top {
+      width: 125%;
+      height: 12%;
+      background: linear-gradient(90deg, #475569, #94a3b8, #f8fafc, #94a3b8, #475569);
+      border-radius: 4px 4px 1.5px 1.5px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.8);
+      z-index: 2;
+    }
+    .barber-pole-glass {
+      width: 88%;
+      height: 76%;
+      overflow: hidden;
+      position: relative;
+      box-shadow: inset 0 0 6px rgba(0,0,0,0.9);
+      background: #000000;
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      border-right: 1px solid rgba(0,0,0,0.6);
+    }
+    .barber-pole-stripes {
+      position: absolute;
+      top: -30px;
+      bottom: -30px;
+      left: 0;
+      right: 0;
+      background: repeating-linear-gradient(
+        135deg,
+        #dc2626 0px,
+        #dc2626 6px,
+        #ffffff 6px,
+        #ffffff 12px,
+        #2563eb 12px,
+        #2563eb 18px
+      );
+      animation: barberPoleScroll 0.75s linear infinite;
+      will-change: transform;
+    }
+    .barber-pole-shine {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.05) 45%, rgba(0,0,0,0.65) 100%);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .barber-pole-cap-bottom {
+      width: 125%;
+      height: 12%;
+      background: linear-gradient(90deg, #475569, #94a3b8, #f8fafc, #94a3b8, #475569);
+      border-radius: 1.5px 1.5px 4px 4px;
+      box-shadow: 0 -1px 3px rgba(0,0,0,0.8);
+      z-index: 2;
+    }
+
+    @keyframes barberPoleScroll {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(25.4558px); }
+    }
+
+    .barber-pole-wrapper.small {
+      height: 100%;
+    }
+
+    /* 🍁 ПАДАЩИ ЕЛЕМЕНТИ */
+    @keyframes fall {
+      0% { transform: translateY(-5vh) rotate(0deg); opacity: 0; }
+      10% { opacity: 0.5; }
+      90% { opacity: 0.5; }
+      100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }
+    }
+    @keyframes sway {
+      0%, 100% { margin-left: 0px; }
+      50% { margin-left: 28px; }
+    }
+    .falling-leaf {
+      position: fixed;
+      top: -30px;
+      pointer-events: none;
+      user-select: none;
+      animation: fall linear infinite, sway ease-in-out infinite alternate;
+      z-index: 0;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+    }
+
+    /* ✨ SKELETON LOADING STATES */
+    @keyframes skeletonShimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .skeleton-shimmer {
+      background: linear-gradient(100deg, #141414 30%, #2a2a2a 50%, #141414 70%);
+      background-size: 300% 100%;
+      animation: skeletonShimmer 1.6s ease-in-out infinite;
+      border: 1px solid #262626;
+      border-radius: 0.75rem;
+    }
+
+    /* 🔘 SPINNER */
+    @keyframes spinFade {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .btn-spinner {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2.5px solid rgba(0,0,0,0.25);
+      border-top-color: #000000;
+      animation: spinFade 0.7s linear infinite;
+      display: inline-block;
+    }
+
+    /* 🔢 STEP PROGRESS INDICATOR */
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex: 1;
+    }
+    .step-circle {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      border: 1.5px solid #262626;
+      background: #000000;
+      color: rgba(255,255,255,0.4);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      flex-shrink: 0;
+    }
+    .step-circle.done {
+      background: #ffffff;
+      border-color: #ffffff;
+      color: #000000;
+    }
+    .step-circle.active {
+      border-color: #ffffff;
+      color: #ffffff;
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.12);
+    }
+    .step-label {
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: rgba(255,255,255,0.35);
+      transition: color 0.3s ease;
+      white-space: nowrap;
+    }
+    .step-label.active, .step-label.done {
+      color: #ffffff;
+    }
+    .step-line {
+      flex-grow: 1;
+      height: 1.5px;
+      background: #262626;
+      margin: 0 4px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 2px;
+    }
+    .step-line-fill {
+      position: absolute;
+      inset: 0;
+      background: #ffffff;
+      width: 0%;
+      transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* 🎉 CONFETTI & SUCCESS ANIMATIONS */
+    @keyframes confettiFall {
+      0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(90px) rotate(220deg); opacity: 0; }
+    }
+    .confetti-bit {
+      position: absolute;
+      top: 10%;
+      animation: confettiFall 1.1s ease-in forwards;
+      pointer-events: none;
+    }
+    @keyframes successPop {
+      0% { transform: scale(0.6); opacity: 0; }
+      60% { transform: scale(1.08); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .success-pole-pop {
+      animation: successPop 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
   </style>
 </head>
-<body class="bg-black text-gray-100 min-h-screen font-sans pb-12 overflow-x-hidden selection:bg-white selection:text-black">
+<body class="bg-[#000000] text-white min-h-screen font-sans pb-12 overflow-x-hidden selection:bg-[#ffffff] selection:text-[#000000] relative">
 
-  <!-- Премиум Splash Screen -->
-  <div id="splash-screen" class="fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]">
+  <!-- Фонови Слоеве -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div class="absolute -top-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+    <div class="absolute top-1/2 -right-32 w-96 h-96 bg-[#e1e1e1]/10 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-32 left-1/3 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+
+    <!-- Падащи листа -->
+    <span class="falling-leaf text-white/30 text-lg" style="left: 5%; animation-duration: 9s; animation-delay: 0s;">🍁</span>
+    <span class="falling-leaf text-[#e1e1e1]/30 text-xl" style="left: 16%; animation-duration: 12s; animation-delay: 2s;">🍂</span>
+    <span class="falling-leaf text-white/20 text-base" style="left: 28%; animation-duration: 8.5s; animation-delay: 4s;">🍁</span>
+    <span class="falling-leaf text-[#e1e1e1]/40 text-xl" style="left: 41%; animation-duration: 11s; animation-delay: 1s;">🍂</span>
+    <span class="falling-leaf text-white/20 text-lg" style="left: 54%; animation-duration: 10s; animation-delay: 5s;">🍁</span>
+    <span class="falling-leaf text-[#e1e1e1]/30 text-base" style="left: 67%; animation-duration: 13s; animation-delay: 3s;">🍂</span>
+    <span class="falling-leaf text-white/30 text-xl" style="left: 81%; animation-duration: 9.5s; animation-delay: 0.5s;">🍁</span>
+    <span class="falling-leaf text-[#e1e1e1]/30 text-lg" style="left: 93%; animation-duration: 11.5s; animation-delay: 2.5s;">🍂</span>
+  </div>
+
+  <!-- Splash Screen -->
+  <div id="splash-screen" class="fixed inset-0 bg-[#000000] z-[100] flex flex-col items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]">
     <div class="relative flex flex-col items-center space-y-4 px-6 text-center">
-      <div class="absolute -inset-12 bg-gradient-to-r from-zinc-800 via-zinc-700 to-zinc-900 rounded-full blur-3xl opacity-25 animate-pulse"></div>
+      <div class="absolute -inset-12 bg-gradient-to-r from-white/20 via-[#e1e1e1]/10 to-white/20 rounded-full blur-3xl opacity-60 animate-pulse"></div>
       <div class="relative z-10 space-y-2 animate-fade-in-up">
+        <div class="w-16 h-16 bg-gradient-to-br from-[#141414] to-[#000000] border border-[#262626] rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-white/5 mb-3">
+          <div class="barber-pole-wrapper">
+            <div class="barber-pole-cap-top"></div>
+            <div class="barber-pole-glass">
+              <div class="barber-pole-stripes"></div>
+              <div class="barber-pole-shine"></div>
+            </div>
+            <div class="barber-pole-cap-bottom"></div>
+          </div>
+        </div>
+
         <h1 class="text-4xl sm:text-6xl font-black uppercase text-white tracking-[0.25em] drop-shadow-2xl">SG FORGE</h1>
-        <p class="text-xs sm:text-sm uppercase text-zinc-400 tracking-[0.4em] font-semibold">Barber Studio</p>
+        <p class="text-xs sm:text-sm uppercase text-[#e1e1e1] tracking-[0.4em] font-extrabold">Barber Studio</p>
       </div>
-      <div class="relative z-10 w-36 h-1 bg-zinc-900 rounded-full overflow-hidden mt-6 border border-zinc-800/80">
-        <div id="splash-progress" class="absolute top-0 left-0 h-full bg-white rounded-full w-0 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(255,255,255,0.9)]"></div>
+      <div class="relative z-10 w-40 h-1.5 bg-[#000000] rounded-full overflow-hidden mt-6 border border-[#262626]">
+        <div id="splash-progress" class="absolute top-0 left-0 h-full bg-gradient-to-r from-[#e1e1e1] to-[#ffffff] rounded-full w-0 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(255,255,255,0.6)]"></div>
       </div>
     </div>
   </div>
 
-  <header class="border-b border-zinc-800 bg-zinc-950 p-4 flex justify-between items-center max-w-4xl mx-auto sticky top-0 z-50">
-    <div>
-      <h1 class="text-xl font-black uppercase text-white tracking-wider">SG FORGE</h1>
-      <p class="text-xs text-zinc-400">Barber Studio</p>
-    </div>
-    <div class="flex items-center gap-2">
-      <div id="auth-header-container"></div>
+  <!-- Header -->
+  <header class="border-b border-[#262626] bg-[#000000]/90 backdrop-blur-md p-4 sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto flex justify-between items-center relative z-10">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-gradient-to-br from-[#141414] to-[#000000] border border-[#262626] rounded-xl flex items-center justify-center shadow-md shadow-white/5">
+          <div class="barber-pole-wrapper">
+            <div class="barber-pole-cap-top"></div>
+            <div class="barber-pole-glass">
+              <div class="barber-pole-stripes"></div>
+              <div class="barber-pole-shine"></div>
+            </div>
+            <div class="barber-pole-cap-bottom"></div>
+          </div>
+        </div>
+
+        <div>
+          <h1 class="text-lg font-black uppercase text-white tracking-wider leading-none">SG FORGE</h1>
+          <p class="text-[10px] text-[#e1e1e1] font-bold tracking-wider uppercase mt-0.5">Barber Studio</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <div id="auth-header-container"></div>
+      </div>
     </div>
   </header>
 
-  <main class="max-w-4xl mx-auto p-4 mt-6 space-y-6">
-    <!-- Основен екран за запазване на час -->
-    <div id="booking-section" class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-6 max-w-lg mx-auto">
-      <h2 class="text-lg font-bold text-white uppercase tracking-wider text-center">Запази час</h2>
+  <!-- Main Content Grid -->
+  <main class="max-w-5xl mx-auto p-4 mt-4 relative z-10">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       
-      <div>
-        <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2 text-center">Избери дата</label>
-        <div id="calendar-grid" class="grid grid-cols-7 gap-1.5 text-center text-xs"></div>
-      </div>
+      <!-- ЛЯВА КОЛОНА: ЗАПАЗВАНЕ НА ЧАС -->
+      <div id="booking-section" class="lg:col-span-7 bg-[#0d0d0d]/90 border border-[#262626] backdrop-blur-xl p-5 sm:p-7 rounded-2xl shadow-2xl space-y-6">
 
-      <div id="slots-container" class="hidden space-y-3">
-        <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 text-center">Избери свободен час</label>
-        <div id="slots-grid" class="grid grid-cols-3 gap-2"></div>
-      </div>
-
-      <!-- Форма за данни -->
-      <div id="client-form" class="hidden space-y-4 pt-2 border-t border-zinc-800">
-        <p id="selected-slot-info" class="text-xs text-emerald-400 font-bold text-center"></p>
-        <div>
-          <label class="block text-xs text-zinc-400 mb-1">Име и Фамилия</label>
-          <input type="text" id="client-name" placeholder="Въведете име..." class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-zinc-500" />
+        <!-- Стъпков индикатор -->
+        <div class="flex items-center pb-1">
+          <div class="step-item">
+            <div id="step-circle-1" class="step-circle active">1</div>
+            <span id="step-label-1" class="step-label active">Дата &amp; час</span>
+          </div>
+          <div class="step-line"><div id="step-line-1" class="step-line-fill"></div></div>
+          <div class="step-item" style="flex: 0 0 auto;">
+            <div id="step-circle-2" class="step-circle">2</div>
+            <span id="step-label-2" class="step-label">Данни</span>
+          </div>
+          <div class="step-line"><div id="step-line-2" class="step-line-fill"></div></div>
+          <div class="step-item" style="flex: 0 0 auto;">
+            <div id="step-circle-3" class="step-circle">3</div>
+            <span id="step-label-3" class="step-label">Потвърждение</span>
+          </div>
         </div>
-        <div>
-          <label class="block text-xs text-zinc-400 mb-1">Телефонен номер</label>
-          <input type="tel" id="client-phone" maxlength="10" inputmode="numeric" pattern="[0-9]*" placeholder="089xxxxxxx" 
-                 oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);" 
-                 class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-zinc-500" />
+
+        <div class="flex items-center justify-between border-b border-[#262626] pb-4">
+          <div class="flex items-center gap-2 text-white font-bold text-xs uppercase tracking-wider">
+            <i data-lucide="calendar-check" class="w-4 h-4 text-[#e1e1e1]"></i>
+            <span>1. Избери дата и час</span>
+          </div>
         </div>
-        <button onclick="confirmBooking()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3 rounded-xl transition text-sm">
-          Потвърди резервацията
-        </button>
+        
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-white/70 mb-3 flex items-center gap-1.5">
+            <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#e1e1e1]"></i> Избери дата
+          </label>
+          <div id="calendar-grid" class="grid grid-cols-7 gap-1.5 text-center text-xs"></div>
+        </div>
+
+        <div id="slots-container" class="hidden space-y-3 pt-2">
+          <label class="block text-xs font-bold uppercase tracking-wider text-white/70 flex items-center gap-1.5">
+            <i data-lucide="clock" class="w-3.5 h-3.5 text-[#e1e1e1]"></i> Избери свободен час
+          </label>
+          <div id="slots-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-2"></div>
+        </div>
+
+        <!-- Форма за данни -->
+        <div id="client-form" class="hidden space-y-4 pt-4 border-t border-[#262626]">
+          <div id="selected-slot-info" class="text-xs text-white font-bold text-center bg-white/10 border border-white/20 py-2.5 px-3 rounded-xl"></div>
+          <div>
+            <label class="block text-xs font-semibold text-white/70 mb-1.5">Име и Фамилия</label>
+            <input type="text" id="client-name" placeholder="Вашето име..." class="w-full bg-[#000000] border border-[#262626] rounded-xl p-3 text-sm text-white focus:outline-none focus:border-[#ffffff] transition placeholder:text-white/30" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-white/70 mb-1.5">Телефонен номер</label>
+            <input type="tel" id="client-phone" maxlength="10" inputmode="numeric" pattern="[0-9]*" placeholder="089xxxxxxx" 
+                   oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);" 
+                   class="w-full bg-[#000000] border border-[#262626] rounded-xl p-3 text-sm text-white focus:outline-none focus:border-[#ffffff] transition placeholder:text-white/30" />
+          </div>
+          <button id="confirm-booking-btn" onclick="confirmBooking()" class="w-full bg-gradient-to-r from-[#ffffff] to-[#e1e1e1] hover:from-[#e1e1e1] hover:to-[#cccccc] text-[#000000] font-extrabold py-3.5 rounded-xl transition-all shadow-lg shadow-white/10 text-sm flex items-center justify-center gap-2 border border-white/20 disabled:opacity-70">
+            <i data-lucide="check-circle-2" class="w-4 h-4"></i> <span id="confirm-booking-btn-text">Потвърди резервацията</span>
+          </button>
+        </div>
+
+        <!-- Съобщение ако не е влязъл -->
+        <div id="login-required-msg" class="hidden text-center py-5 space-y-3 border-t border-[#262626] bg-[#000000]/60 rounded-xl p-4">
+          <p class="text-xs text-white/70">Трябва да влезете в профила си, за да завършите запазването на час.</p>
+          <button onclick="openAuthModal()" class="bg-[#ffffff] hover:bg-[#e1e1e1] text-[#000000] font-bold text-xs py-2.5 px-5 rounded-xl transition shadow-lg shadow-white/10 border border-white/20">Вход / Регистрация</button>
+        </div>
       </div>
 
-      <!-- Съобщение ако не е влязъл -->
-      <div id="login-required-msg" class="hidden text-center py-4 space-y-2 border-t border-zinc-800">
-        <p class="text-xs text-zinc-400">Трябва да влезете в профила си, за да запазите час.</p>
-        <button onclick="openAuthModal()" class="bg-white text-black font-bold text-xs py-2 px-4 rounded-xl hover:bg-zinc-200 transition">Вход / Регистрация</button>
+      <!-- ДЯСНА КОЛОНА -->
+      <div class="lg:col-span-5 space-y-6">
+        
+        <!-- КАРТА 1: Статус & Информация за студиото -->
+        <div class="bg-[#0d0d0d]/90 border border-[#262626] backdrop-blur-xl p-5 sm:p-6 rounded-2xl shadow-xl space-y-5">
+          
+          <div class="flex items-center justify-between border-b border-[#262626] pb-4">
+            <span class="text-xs font-bold uppercase tracking-wider text-white/70">СТАТУС В МОМЕНТА</span>
+            <div id="live-status-pill" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span id="live-status-text">Отворен в момента</span>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <div class="flex items-start gap-3">
+              <div class="w-9 h-9 rounded-xl bg-[#000000] border border-[#262626] flex items-center justify-center text-white shrink-0 mt-0.5">
+                <i data-lucide="clock" class="w-4.5 h-4.5 text-[#e1e1e1]"></i>
+              </div>
+              <div class="text-xs">
+                <p class="font-bold text-white/50 uppercase tracking-wider mb-0.5">РАБОТНО ВРЕМЕ</p>
+                <p class="font-semibold text-white">Вторник - Събота: 10:00 - 22:00</p>
+                <p class="font-semibold text-white">Неделя: 10:00 - 14:00</p>
+                <p class="text-[11px] text-[#e1e1e1] font-bold mt-0.5">Понеделник: Почивен ден</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <div class="w-9 h-9 rounded-xl bg-[#000000] border border-[#262626] flex items-center justify-center text-white shrink-0 mt-0.5">
+                <i data-lucide="map-pin" class="w-4.5 h-4.5 text-[#e1e1e1]"></i>
+              </div>
+              <div class="text-xs">
+                <p class="font-bold text-white/50 uppercase tracking-wider mb-0.5">ЛОКАЦИЯ</p>
+                <a href="https://maps.app.goo.gl/MQL7rSSpcwqoGa5T9" target="_blank" class="font-semibold text-white hover:text-[#e1e1e1] transition underline underline-offset-2 flex items-center gap-1">
+                  гр. Ихтиман, Център 822 24
+                  <i data-lucide="external-link" class="w-3 h-3 text-[#e1e1e1]"></i>
+                </a>
+                <p class="text-[11px] text-white/80 font-medium mt-0.5 flex items-center gap-1">
+                  <i data-lucide="parking-square" class="w-3.5 h-3.5 text-[#e1e1e1]"></i> Безплатен паркинг за клиенти
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2.5 pt-2 border-t border-[#262626]">
+            <a href="tel:+359893841265" class="w-full bg-[#000000] hover:bg-[#141414] text-white border border-[#262626] py-3 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
+              <i data-lucide="phone" class="w-4 h-4 text-[#e1e1e1]"></i> Обади се: 089 384 1265
+            </a>
+            <a href="https://www.instagram.com/sgforge.official?igsh=N3l3cXcyMXM4aG9h" target="_blank" class="w-full bg-gradient-to-r from-[#ffffff] via-[#e1e1e1] to-[#cccccc] hover:opacity-90 text-[#000000] border border-white/20 py-3 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-white/10">
+              <i data-lucide="instagram" class="w-4 h-4"></i> Последвай в Instagram
+            </a>
+          </div>
+
+        </div>
+
+        <!-- КАРТА 2: ОТЗИВИ И ОЦЕНКИ (СВЪРЗАНИ С FIREBASE) -->
+        <div class="bg-[#0d0d0d]/90 border border-[#262626] backdrop-blur-xl p-5 sm:p-6 rounded-2xl shadow-xl space-y-4">
+          <div class="flex items-center justify-between border-b border-[#262626] pb-3">
+            <div class="flex items-center gap-2">
+              <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+              <span class="text-xs font-bold uppercase tracking-wider text-white">ОТЗИВИ ОТ КЛИЕНТИ</span>
+            </div>
+            <span id="avg-rating-badge" class="text-[11px] font-extrabold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-0.5 rounded-full">
+              5.0 ★
+            </span>
+          </div>
+
+          <div id="reviews-list" class="space-y-3 max-h-64 overflow-y-auto pr-1">
+            <p class="text-xs text-white/40 text-center py-3">Зареждане на отзиви...</p>
+          </div>
+
+          <button onclick="openReviewModal()" class="w-full bg-[#000000] hover:bg-[#141414] text-white border border-[#262626] py-3 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-md">
+            <i data-lucide="message-square-plus" class="w-4 h-4 text-[#e1e1e1]"></i> Напиши отзив
+          </button>
+        </div>
+
       </div>
+
     </div>
   </main>
 
-  <!-- Универсален Стилен Модален прозорец за Известия и Грешки -->
-  <div id="alert-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center hidden z-[140] p-4">
-    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative">
+  <!-- Модален прозорец за Оставяне на Отзив -->
+  <div id="review-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center hidden z-[150] p-4">
+    <div class="bg-[#0d0d0d] border border-[#262626] p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl relative animate-modal">
+      <div class="flex justify-between items-center pb-2 border-b border-[#262626]">
+        <h3 class="text-md font-bold text-white uppercase tracking-wider flex items-center gap-2">
+          <i data-lucide="star" class="w-4.5 h-4.5 text-amber-400 fill-amber-400"></i> Остави отзив
+        </h3>
+        <button onclick="closeReviewModal()" class="text-xs bg-[#000000] hover:bg-[#141414] text-white py-1.5 px-3 rounded-lg border border-[#262626] transition">Отказ</button>
+      </div>
+      
+      <div class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-semibold text-white/70 mb-2 text-center">Избери твоята оценка</label>
+          <div id="star-rating-select" class="flex justify-center gap-2 text-2xl text-amber-400 cursor-pointer">
+            <button onclick="setReviewRating(1)" class="star-btn transition transform hover:scale-110">★</button>
+            <button onclick="setReviewRating(2)" class="star-btn transition transform hover:scale-110">★</button>
+            <button onclick="setReviewRating(3)" class="star-btn transition transform hover:scale-110">★</button>
+            <button onclick="setReviewRating(4)" class="star-btn transition transform hover:scale-110">★</button>
+            <button onclick="setReviewRating(5)" class="star-btn transition transform hover:scale-110">★</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-white/70 mb-1.5">Твоето име</label>
+          <input type="text" id="review-author" placeholder="Въведи името си..." class="w-full bg-[#000000] border border-[#262626] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#ffffff] transition placeholder:text-white/30" />
+        </div>
+        
+        <div>
+          <label class="block text-xs font-semibold text-white/70 mb-1.5">Твоят коментар</label>
+          <textarea id="review-comment" rows="3" placeholder="Сподели впечатленията си от обслужването..." class="w-full bg-[#000000] border border-[#262626] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#ffffff] transition placeholder:text-white/30 resize-none"></textarea>
+        </div>
+
+        <button onclick="submitReview()" class="w-full bg-gradient-to-r from-[#ffffff] to-[#e1e1e1] hover:from-[#e1e1e1] hover:to-[#cccccc] text-[#000000] font-extrabold py-3 rounded-xl transition-all shadow-lg shadow-white/10 text-xs border border-white/20">
+          Публикувай отзива
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модален прозорец за Известия -->
+  <div id="alert-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center hidden z-[140] p-4">
+    <div class="bg-[#0d0d0d] border border-[#262626] p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative">
       <div id="alert-modal-icon" class="w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-2">
         <i data-lucide="alert-circle" class="w-6 h-6"></i>
       </div>
       <h3 id="alert-modal-title" class="text-md font-bold text-white uppercase tracking-wider">Внимание</h3>
-      <p id="alert-modal-desc" class="text-xs text-zinc-400">Съобщение...</p>
-      <button onclick="closeCustomAlert()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition mt-2">
+      <p id="alert-modal-desc" class="text-xs text-white/70">Съобщение...</p>
+      <button onclick="closeCustomAlert()" class="w-full bg-white hover:bg-gray-200 text-[#000000] font-bold py-2.5 rounded-xl text-xs transition mt-2">
         Разбрах
       </button>
     </div>
   </div>
 
-  <!-- Стилен Модален прозорец за Потвърждение при Отказ -->
-  <div id="confirm-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center hidden z-[130] p-4">
-    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative">
+  <!-- Модален прозорец при Отказ -->
+  <div id="confirm-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center hidden z-[130] p-4">
+    <div class="bg-[#0d0d0d] border border-[#262626] p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative">
       <div class="w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-2">
         <i data-lucide="alert-triangle" class="w-6 h-6"></i>
       </div>
       <h3 id="confirm-modal-title" class="text-md font-bold text-white uppercase tracking-wider">Отказ на запазен час</h3>
-      <p id="confirm-modal-desc" class="text-xs text-zinc-400">Сигурни ли сте, че искате да се откажете от този час? Часът ще бъде освободен за други клиенти.</p>
+      <p id="confirm-modal-desc" class="text-xs text-white/70">Сигурни ли сте, че искате да се откажете от този час? Часът ще бъде освободен за други клиенти.</p>
       <div class="flex gap-2.5 pt-2">
-        <button onclick="closeCustomConfirm(false)" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2.5 rounded-xl text-xs transition">
+        <button onclick="closeCustomConfirm(false)" class="flex-1 bg-[#000000] hover:bg-[#141414] text-white border border-[#262626] font-bold py-2.5 rounded-xl text-xs transition">
           Запази го
         </button>
-        <button id="confirm-modal-yes-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-lg shadow-red-500/20">
+        <button id="confirm-modal-yes-btn" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-lg shadow-red-600/20">
           Да, откажи го
         </button>
       </div>
@@ -139,73 +548,89 @@
   </div>
 
   <!-- Модален прозорец за Успешна Резервация -->
-  <div id="success-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center hidden z-[120] p-4">
-    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative">
-      <div class="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-2">
-        <i data-lucide="check" class="w-6 h-6"></i>
+  <div id="success-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center hidden z-[120] p-4">
+    <div class="bg-[#0d0d0d] border border-[#262626] p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative overflow-hidden">
+      <div id="success-confetti" class="absolute inset-x-0 top-0 h-24 pointer-events-none"></div>
+
+      <div class="w-14 h-14 mx-auto mb-1 relative success-pole-pop">
+        <div class="w-14 h-14 bg-gradient-to-br from-[#141414] to-[#000000] border border-[#262626] rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-white/10">
+          <div class="barber-pole-wrapper small" style="height: 85%;">
+            <div class="barber-pole-cap-top"></div>
+            <div class="barber-pole-glass">
+              <div class="barber-pole-stripes"></div>
+              <div class="barber-pole-shine"></div>
+            </div>
+            <div class="barber-pole-cap-bottom"></div>
+          </div>
+        </div>
       </div>
+
       <h3 class="text-md font-bold text-white uppercase tracking-wider">Часът е запазен успешно!</h3>
-      <p id="success-modal-desc" class="text-xs text-zinc-400">Очакваме Ви в SG Forge Studio.</p>
-      <button onclick="closeSuccessModalAndReload()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition mt-2">
+      <p id="success-modal-desc" class="text-xs text-white/70">Очакваме Ви в SG Forge Studio.</p>
+      <p class="text-[10px] text-[#e1e1e1] font-bold uppercase tracking-[0.15em]">✂️ До скоро на стола</p>
+      <button onclick="closeSuccessModalAndReload()" class="w-full bg-[#ffffff] hover:bg-[#e1e1e1] text-[#000000] font-extrabold py-2.5 rounded-xl text-xs transition mt-2 shadow-lg shadow-white/10 border border-white/20">
         Супер, разбрах
       </button>
     </div>
   </div>
 
-  <!-- Модален прозорец за Вход / Регистрация -->
-  <div id="auth-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50 p-4">
-    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl relative">
+  <!-- Модален прозорец Вход / Регистрация -->
+  <div id="auth-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-[#0d0d0d] border border-[#262626] p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl relative animate-modal">
       <div class="flex justify-between items-center">
         <h3 id="auth-modal-title" class="text-md font-bold text-white uppercase tracking-wider">Вход в профила</h3>
-        <button onclick="closeAuthModal()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-1.5 px-3 rounded-lg border border-zinc-700 transition">Отказ</button>
+        <button onclick="closeAuthModal()" class="text-xs bg-[#000000] hover:bg-[#141414] text-white py-1.5 px-3 rounded-lg border border-[#262626] transition">Отказ</button>
       </div>
 
-      <button onclick="loginWithGoogle()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+      <button onclick="loginWithGoogle()" class="w-full bg-white hover:bg-gray-200 text-[#000000] font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-md">
         <i data-lucide="globe" class="w-4 h-4"></i> Вход с Google
       </button>
 
       <div class="flex items-center my-2">
-        <div class="flex-grow border-t border-zinc-800"></div>
-        <span class="px-2 text-[10px] text-zinc-500 uppercase">или с имейл</span>
-        <div class="flex-grow border-t border-zinc-800"></div>
+        <div class="flex-grow border-t border-[#262626]"></div>
+        <span class="px-2 text-[10px] text-white/50 uppercase font-semibold">или с имейл</span>
+        <div class="flex-grow border-t border-[#262626]"></div>
       </div>
 
       <div class="space-y-3">
         <div>
-          <label class="block text-[11px] text-zinc-400 mb-1">Имейл</label>
-          <input type="email" id="auth-email" placeholder="name@example.com" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none" />
+          <label class="block text-[11px] text-white/70 mb-1">Имейл</label>
+          <input type="email" id="auth-email" placeholder="name@example.com" class="w-full bg-[#000000] border border-[#262626] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#ffffff] transition placeholder:text-white/30" />
         </div>
         <div>
-          <label class="block text-[11px] text-zinc-400 mb-1">Парола</label>
-          <input type="password" id="auth-password" placeholder="••••••••" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none" />
+          <label class="block text-[11px] text-white/70 mb-1">Парола</label>
+          <input type="password" id="auth-password" placeholder="••••••••" class="w-full bg-[#000000] border border-[#262626] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-[#ffffff] transition placeholder:text-white/30" />
         </div>
-        <button id="auth-action-btn" onclick="handleEmailAuth()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 rounded-xl text-xs transition">Вход</button>
+        <button id="auth-action-btn" onclick="handleEmailAuth()" class="w-full bg-[#ffffff] hover:bg-[#e1e1e1] text-[#000000] font-extrabold py-2.5 rounded-xl text-xs transition shadow-lg shadow-white/10 border border-white/20">Вход</button>
       </div>
 
       <div class="text-center pt-2">
-        <button onclick="toggleAuthMode()" id="auth-toggle-link" class="text-[11px] text-zinc-400 hover:text-white underline">Нямате профил? Регистрирайте се</button>
+        <button onclick="toggleAuthMode()" id="auth-toggle-link" class="text-[11px] text-white/70 hover:text-white underline">Нямате профил? Регистрирайте се</button>
       </div>
     </div>
   </div>
 
-  <!-- Модален прозорец "Моите часове" -->
-  <div id="my-appointments-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50 p-4">
-    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-md w-full space-y-4 shadow-2xl relative max-h-[90vh] flex flex-col">
-      <div class="flex justify-between items-center pb-2 border-b border-zinc-800">
-        <h3 class="text-md font-bold text-white uppercase tracking-wider">Моите запазени часове</h3>
-        <button onclick="closeMyAppointmentsModal()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-1.5 px-3 rounded-lg border border-zinc-700 transition">Затвори</button>
+  <!-- Модален прозорец Моите часове -->
+  <div id="my-appointments-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-[#0d0d0d] border border-[#262626] p-6 rounded-2xl max-w-md w-full space-y-4 shadow-2xl relative max-h-[90vh] flex flex-col animate-modal">
+      <div class="flex justify-between items-center pb-2 border-b border-[#262626]">
+        <h3 class="text-md font-bold text-white uppercase tracking-wider flex items-center gap-2">
+          <i data-lucide="calendar" class="w-4 h-4 text-[#e1e1e1]"></i> Моите запазени часове
+        </h3>
+        <button onclick="closeMyAppointmentsModal()" class="text-xs bg-[#000000] hover:bg-[#141414] text-white py-1.5 px-3 rounded-lg border border-[#262626] transition">Затвори</button>
       </div>
-      <div id="client-appointments-list" class="space-y-3 overflow-y-auto pr-1 flex-grow">
-        <p class="text-xs text-zinc-500 text-center py-4">Зареждане...</p>
-      </div>
+      <div id="client-appointments-list" class="space-y-3 overflow-y-auto pr-1 flex-grow"></div>
     </div>
   </div>
 
-  <footer class="text-center text-xs text-zinc-600 mt-12">
+  <footer class="text-center text-xs text-white/40 mt-12 tracking-wider relative z-10">
     SG FORGE BARBER STUDIO &copy; 2026
   </footer>
 
   <script>
+    /* ============================================================ */
+    /* 🔥 FIREBASE CONFIGURATION & INITIALIZATION */
+    /* ============================================================ */
     const firebaseConfig = {
       apiKey: "AIzaSyCDniksfxmA5GU04nLzrmumt2AFp4_LxMA",
       authDomain: "sgforge-barber-studio.firebaseapp.com",
@@ -223,14 +648,16 @@
     let currentUser = null;
     let selectedDate = '';
     let selectedTime = '';
+    let selectedReviewRating = 5;
+
     let scheduleSettings = { 
-      startTime: "09:00", 
+      startTime: "10:00", 
       endTime: "22:00", 
       serviceDuration: 60, 
       cleanDuration: 5, 
-      breakStart: "14:00", 
-      breakEnd: "16:00",
-      sunStartTime: "09:00",
+      breakStart: "00:00", 
+      breakEnd: "00:00",
+      sunStartTime: "10:00",
       sunEndTime: "14:00",
       sunServiceDuration: 60,
       sunCleanDuration: 5
@@ -238,6 +665,71 @@
     let daysOffList = [];
     let isRegisterMode = false;
     let confirmCallback = null;
+
+    function hapticTick(pattern = 10) {
+      try {
+        if (window.navigator && typeof window.navigator.vibrate === 'function') {
+          window.navigator.vibrate(pattern);
+        }
+      } catch (e) {}
+    }
+
+    function formatDateToString(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function parseDateString(dateStr) {
+      if (!dateStr) return new Date();
+      const parts = dateStr.split('-');
+      return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    }
+
+    function parseDateTime(dateStr, timeStr) {
+      const dParts = dateStr.split('-');
+      const tParts = (timeStr || "00:00").split(':');
+      return new Date(
+        parseInt(dParts[0], 10),
+        parseInt(dParts[1], 10) - 1,
+        parseInt(dParts[2], 10),
+        parseInt(tParts[0], 10),
+        parseInt(tParts[1], 10)
+      );
+    }
+
+    function updateStepIndicator() {
+      let step = 1;
+      if (selectedDate && selectedTime) step = 2;
+      if (selectedDate && selectedTime && currentUser) step = 3;
+
+      for (let i = 1; i <= 3; i++) {
+        const circle = document.getElementById(`step-circle-${i}`);
+        const label = document.getElementById(`step-label-${i}`);
+        if (!circle || !label) continue;
+        circle.classList.remove('active', 'done');
+        label.classList.remove('active', 'done');
+        if (i < step) {
+          circle.classList.add('done');
+          label.classList.add('done');
+          circle.innerHTML = '<i data-lucide="check" class="w-3 h-3"></i>';
+        } else if (i === step) {
+          circle.classList.add('active');
+          label.classList.add('active');
+          circle.innerText = i;
+        } else {
+          circle.innerText = i;
+        }
+      }
+
+      const line1 = document.getElementById('step-line-1');
+      const line2 = document.getElementById('step-line-2');
+      if (line1) line1.style.width = step >= 2 ? '100%' : '0%';
+      if (line2) line2.style.width = step >= 3 ? '100%' : '0%';
+
+      lucide.createIcons();
+    }
 
     function showCustomAlert(title, message, isError = true) {
       document.getElementById('alert-modal-title').innerText = title;
@@ -279,6 +771,177 @@
       confirmCallback = null;
     }
 
+    function updateLiveStatus() {
+      const now = new Date();
+      const day = now.getDay();
+      const currentTime = now.getHours() + (now.getMinutes() / 60);
+      const pill = document.getElementById('live-status-pill');
+      const text = document.getElementById('live-status-text');
+
+      if (!pill || !text) return;
+
+      let isOpen = false;
+
+      if (day >= 2 && day <= 6) {
+        if (currentTime >= 10 && currentTime < 22) isOpen = true;
+      } else if (day === 0) {
+        if (currentTime >= 10 && currentTime < 14) isOpen = true;
+      }
+
+      if (isOpen) {
+        pill.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+        text.innerText = "Отворен в момента";
+      } else {
+        pill.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-red-500/10 text-red-400 border border-red-500/20";
+        text.innerText = "Затворен в момента";
+      }
+    }
+
+    function renderCalendarSkeleton() {
+      const grid = document.getElementById('calendar-grid');
+      if (!grid) return;
+      let html = '';
+      for (let i = 0; i < 28; i++) {
+        html += `<div class="skeleton-shimmer h-12 w-full"></div>`;
+      }
+      grid.innerHTML = html;
+    }
+
+    function renderSlotsSkeleton() {
+      const grid = document.getElementById('slots-grid');
+      if (!grid) return;
+      let html = '';
+      for (let i = 0; i < 8; i++) {
+        html += `<div class="skeleton-shimmer h-10 w-full"></div>`;
+      }
+      grid.innerHTML = html;
+    }
+
+    function renderAppointmentsSkeleton() {
+      const listContainer = document.getElementById('client-appointments-list');
+      if (!listContainer) return;
+      let html = '';
+      for (let i = 0; i < 2; i++) {
+        html += `
+          <div class="py-3.5 border-b border-[#262626] last:border-none space-y-2.5">
+            <div class="skeleton-shimmer h-4 w-24 rounded-full"></div>
+            <div class="skeleton-shimmer h-4 w-36"></div>
+            <div class="skeleton-shimmer h-3 w-28"></div>
+          </div>
+        `;
+      }
+      listContainer.innerHTML = html;
+    }
+
+    /* ============================================================ */
+    /* ⭐️ REVIEWS SYSTEM (FIREBASE FIRESTORE) */
+    /* ============================================================ */
+    function renderReviews() {
+      const reviewsContainer = document.getElementById('reviews-list');
+      const badge = document.getElementById('avg-rating-badge');
+      if (!reviewsContainer) return;
+
+      db.collection('reviews').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+        if (snapshot.empty) {
+          reviewsContainer.innerHTML = '<p class="text-xs text-white/40 text-center py-3">Все още няма отзиви. Бъдете първият!</p>';
+          if (badge) badge.innerText = '5.0 ★';
+          return;
+        }
+
+        let reviews = [];
+        let totalStars = 0;
+
+        snapshot.forEach(doc => {
+          const r = doc.data();
+          reviews.push(r);
+          totalStars += Number(r.rating) || 5;
+        });
+
+        const avg = (totalStars / reviews.length).toFixed(1);
+        if (badge) badge.innerText = `${avg} ★ (${reviews.length})`;
+
+        let html = '';
+        reviews.forEach(r => {
+          const starsHtml = '★'.repeat(r.rating || 5) + '☆'.repeat(5 - (r.rating || 5));
+          html += `
+            <div class="bg-[#000000] border border-[#262626] p-3 rounded-xl space-y-1 transition hover:border-white/20">
+              <div class="flex justify-between items-center">
+                <span class="text-xs font-bold text-white">${r.name || 'Клиент'}</span>
+                <span class="text-amber-400 text-xs tracking-wider font-mono">${starsHtml}</span>
+              </div>
+              <p class="text-[11px] text-white/70 leading-relaxed">${r.comment || ''}</p>
+              <span class="text-[9px] text-white/30 block text-right">${r.date || ''}</span>
+            </div>
+          `;
+        });
+
+        reviewsContainer.innerHTML = html;
+      }, err => {
+        console.error('Грешка при зареждане на отзиви:', err);
+        reviewsContainer.innerHTML = '<p class="text-xs text-red-400 text-center py-3">Грешка при зареждане на отзивите.</p>';
+      });
+    }
+
+    function openReviewModal() {
+      if (currentUser) {
+        db.collection('users').doc(currentUser.uid).get().then(doc => {
+          if (doc.exists && doc.data().name) {
+            document.getElementById('review-author').value = doc.data().name;
+          }
+        });
+      }
+      setReviewRating(5);
+      document.getElementById('review-comment').value = '';
+      document.getElementById('review-modal').classList.remove('hidden');
+    }
+
+    function closeReviewModal() {
+      document.getElementById('review-modal').classList.add('hidden');
+    }
+
+    function setReviewRating(rating) {
+      selectedReviewRating = rating;
+      const buttons = document.querySelectorAll('#star-rating-select .star-btn');
+      buttons.forEach((btn, index) => {
+        if (index < rating) {
+          btn.classList.add('text-amber-400');
+          btn.classList.remove('text-white/20');
+        } else {
+          btn.classList.remove('text-amber-400');
+          btn.classList.add('text-white/20');
+        }
+      });
+    }
+
+    function submitReview() {
+      const name = document.getElementById('review-author').value.trim() || 'Анонимен Клиент';
+      const comment = document.getElementById('review-comment').value.trim();
+
+      if (!comment) {
+        showCustomAlert('Внимание', 'Моля добавете кратък коментар към отзива!');
+        return;
+      }
+
+      const newReview = {
+        name: name,
+        rating: selectedReviewRating,
+        comment: comment,
+        date: formatDateToString(new Date()),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      db.collection('reviews').add(newReview).then(() => {
+        hapticTick([10, 30, 10]);
+        closeReviewModal();
+        showCustomAlert('Успех', 'Благодарим Ви! Вашият отзив беше публикуван успешно.', false);
+      }).catch(err => {
+        showCustomAlert('Грешка', 'Не успяхме да публикуваме отзива: ' + err.message);
+      });
+    }
+
+    /* ============================================================ */
+    /* 🚀 INITIALIZATION & AUTHENTICATION */
+    /* ============================================================ */
     window.onload = () => {
       const progressBar = document.getElementById('splash-progress');
       if (progressBar) {
@@ -294,15 +957,39 @@
         }
       }, 1200);
 
+      renderCalendarSkeleton();
+      updateLiveStatus();
+      updateStepIndicator();
+      renderReviews();
+
       loadSettingsAndDaysOff();
+
       auth.onAuthStateChanged(user => {
         currentUser = user;
         updateHeaderAuthUI();
+        updateStepIndicator();
         if (currentUser) {
           loadUserProfile();
         }
       });
     };
+
+    function loadSettingsAndDaysOff() {
+      db.collection('settings').doc('schedule').get().then(doc => {
+        if (doc.exists) {
+          scheduleSettings = { ...scheduleSettings, ...doc.data() };
+        }
+      });
+
+      db.collection('settings').doc('daysOff').get().then(doc => {
+        if (doc.exists && doc.data().dates) {
+          daysOffList = doc.data().dates;
+        }
+        renderCalendar();
+      }).catch(() => {
+        renderCalendar();
+      });
+    }
 
     function loadUserProfile() {
       if (!currentUser) return;
@@ -325,10 +1012,10 @@
       if (currentUser) {
         container.innerHTML = `
           <div class="flex items-center gap-2">
-            <button onclick="openMyAppointmentsModal()" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-zinc-300 py-2 px-3 rounded-xl border border-zinc-800 transition flex items-center gap-1.5 font-bold">
-              <i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-400"></i> Часове
+            <button onclick="openMyAppointmentsModal()" class="text-xs bg-[#000000] hover:bg-[#141414] text-white py-2 px-3.5 rounded-xl border border-[#262626] transition flex items-center gap-1.5 font-bold">
+              <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#e1e1e1]"></i> Часове
             </button>
-            <button onclick="logoutUser()" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-red-400 py-2 px-3 rounded-xl border border-zinc-800 transition">
+            <button onclick="logoutUser()" class="text-xs bg-[#000000] hover:bg-[#141414] text-red-400 py-2 px-3 rounded-xl border border-[#262626] transition font-semibold">
               Изход
             </button>
           </div>
@@ -337,7 +1024,7 @@
         loginReqMsg.classList.add('hidden');
       } else {
         container.innerHTML = `
-          <button onclick="openAuthModal()" class="text-xs bg-white hover:bg-zinc-200 text-black font-bold py-2 px-3.5 rounded-xl transition">
+          <button onclick="openAuthModal()" class="text-xs bg-[#ffffff] hover:bg-[#e1e1e1] text-[#000000] font-extrabold py-2 px-4 rounded-xl transition shadow-md shadow-white/10 border border-white/20">
             Вход / Регистрация
           </button>
         `;
@@ -391,18 +1078,6 @@
       });
     }
 
-    function loadSettingsAndDaysOff() {
-      db.collection('settings').doc('schedule').get().then(doc => {
-        if (doc.exists) {
-          scheduleSettings = { ...scheduleSettings, ...doc.data() };
-        }
-      });
-      db.collection('settings').doc('daysOff').get().then(doc => {
-        if (doc.exists && doc.data().dates) daysOffList = doc.data().dates;
-        renderCalendar();
-      });
-    }
-
     function renderCalendar() {
       const grid = document.getElementById('calendar-grid');
       grid.innerHTML = '';
@@ -412,38 +1087,41 @@
       const month = now.getMonth();
       const daysInMonth = new Date(year, month + 1, 0).getDate();
       
-      const todayY = now.getFullYear();
-      const todayM = String(now.getMonth() + 1).padStart(2, '0');
-      const todayD = String(now.getDate()).padStart(2, '0');
-      const todayStr = `${todayY}-${todayM}-${todayD}`;
+      const todayStr = formatDateToString(now);
 
       for (let day = 1; day <= daysInMonth; day++) {
         const d = new Date(year, month, day);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        const dateStr = `${yyyy}-${mm}-${dd}`;
+        const dateStr = formatDateToString(d);
 
+        const dayOfWeek = d.getDay();
         const dayName = d.toLocaleDateString('bg-BG', { weekday: 'short' });
-        const isOff = daysOffList.includes(dateStr);
+        
+        const isMonday = dayOfWeek === 1;
+        const isOff = daysOffList.includes(dateStr) || isMonday;
         const isPast = dateStr < todayStr;
+        const isToday = dateStr === todayStr;
 
         const btn = document.createElement('button');
         const isSelected = selectedDate === dateStr;
 
         if (isOff || isPast) {
-          btn.className = 'p-2.5 rounded-xl border bg-black/20 text-zinc-700 border-zinc-900 cursor-not-allowed flex flex-col items-center opacity-40 text-xs';
-          btn.innerHTML = `<span class="uppercase font-bold text-[9px]">${isOff ? 'Почивка' : 'Мин.'}</span><span class="font-bold line-through">${day}</span>`;
+          btn.className = 'p-2.5 rounded-xl border bg-[#000000]/40 text-white/30 border-[#262626]/30 cursor-not-allowed flex flex-col items-center opacity-40 text-xs';
+          btn.innerHTML = `<span class="uppercase font-bold text-[9px]">${isMonday || isOff ? 'Почивка' : 'Мин.'}</span><span class="font-bold line-through">${day}</span>`;
           btn.disabled = true;
         } else {
-          btn.className = `p-2.5 rounded-xl border flex flex-col items-center transition active:scale-95 text-xs ${isSelected ? 'bg-white text-black border-white shadow-md font-bold' : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-700'}`;
-          btn.innerHTML = `<span class="uppercase font-bold text-[9px] ${isSelected ? 'text-zinc-600' : 'text-zinc-500'}">${dayName}</span><span class="font-bold">${day}</span>`;
+          const todayRing = isToday && !isSelected ? 'ring-1 ring-white/40' : '';
+          btn.className = `p-2.5 rounded-xl border flex flex-col items-center transition-all active:scale-95 text-xs ${todayRing} ${isSelected ? 'bg-[#ffffff] text-[#000000] border-white font-extrabold shadow-lg shadow-white/20' : 'bg-[#000000] text-white border-[#262626] hover:border-white/50 hover:bg-[#000000]/80'}`;
+          btn.innerHTML = `<span class="uppercase font-bold text-[9px] ${isSelected ? 'text-[#000000]' : 'text-white/50'}">${isToday ? 'Днес' : dayName}</span><span class="font-bold text-sm">${day}</span>`;
           btn.onclick = () => {
+            hapticTick(10);
             selectedDate = dateStr;
             selectedTime = '';
             document.getElementById('client-form').classList.add('hidden');
             document.getElementById('login-required-msg').classList.add('hidden');
             renderCalendar();
+            updateStepIndicator();
+            renderSlotsSkeleton();
+            document.getElementById('slots-container').classList.remove('hidden');
             fetchTimeSlots();
           };
         }
@@ -452,42 +1130,32 @@
     }
 
     function generateTimeSlots() {
-      const slots = [];
-      const isSunday = new Date(selectedDate).getDay() === 0;
+      if (!selectedDate) return [];
+      const selectedDateObj = parseDateString(selectedDate);
+      const dayOfWeek = selectedDateObj.getDay();
+
+      if (dayOfWeek === 1) return [];
+
+      const isSunday = dayOfWeek === 0;
 
       const serviceDuration = isSunday ? (Number(scheduleSettings.sunServiceDuration) || Number(scheduleSettings.serviceDuration)) : Number(scheduleSettings.serviceDuration);
       const cleanDuration = isSunday ? (Number(scheduleSettings.sunCleanDuration) || Number(scheduleSettings.cleanDuration)) : Number(scheduleSettings.cleanDuration);
       
       const totalSlotTime = serviceDuration + cleanDuration;
       
-      let start = scheduleSettings.startTime;
-      let end = scheduleSettings.endTime;
-      let bStart = scheduleSettings.breakStart;
-      let bEnd = scheduleSettings.breakEnd;
-
-      if (isSunday) {
-        start = scheduleSettings.sunStartTime || "09:00";  
-        end = scheduleSettings.sunEndTime || "14:00";    
-        bStart = "00:00"; 
-        bEnd = "00:00";   
-      }
+      let start = isSunday ? (scheduleSettings.sunStartTime || "10:00") : (scheduleSettings.startTime || "10:00");
+      let end = isSunday ? (scheduleSettings.sunEndTime || "14:00") : (scheduleSettings.endTime || "22:00");
 
       let [h, m] = start.split(':').map(Number);
       let [endH, endM] = end.split(':').map(Number);
       let currentMin = h * 60 + m;
       const endMin = endH * 60 + endM;
 
-      let [bStartH, bStartM] = bStart.split(':').map(Number);
-      let [bEndH, bEndM] = bEnd.split(':').map(Number);
-      const breakStartMin = bStartH * 60 + bStartM;
-      const breakEndMin = bEndH * 60 + bEndM;
-
+      const slots = [];
       while (currentMin + serviceDuration <= endMin) {
-        if (!(bStart !== "00:00" && bEnd !== "00:00" && currentMin >= breakStartMin && currentMin < breakEndMin)) {
-          const slotH = String(Math.floor(currentMin / 60)).padStart(2, '0');
-          const slotM = String(currentMin % 60).padStart(2, '0');
-          slots.push(`${slotH}:${slotM}`);
-        }
+        const slotH = String(Math.floor(currentMin / 60)).padStart(2, '0');
+        const slotM = String(currentMin % 60).padStart(2, '0');
+        slots.push(`${slotH}:${slotM}`);
         currentMin += totalSlotTime;
       }
       return slots;
@@ -495,40 +1163,54 @@
 
     function fetchTimeSlots() {
       document.getElementById('slots-container').classList.remove('hidden');
-      const grid = document.getElementById('slots-grid');
-      grid.innerHTML = '<p class="col-span-3 text-xs text-zinc-500 text-center py-4">Зареждане на часове...</p>';
 
       db.collection('bookings').where('date', '==', selectedDate).get().then(snapshot => {
-        let booked = [];
+        const booked = [];
         snapshot.forEach(doc => {
-          const data = doc.data();
-          if (data.time && data.status !== 'cancelled') {
-            booked.push(data.time);
+          const b = doc.data();
+          if (b.status !== 'cancelled') {
+            booked.push(b.time);
           }
         });
-        const slots = generateTimeSlots();
 
+        const slots = generateTimeSlots();
+        const grid = document.getElementById('slots-grid');
         grid.innerHTML = '';
+
         if (slots.length === 0) {
-          grid.innerHTML = '<p class="col-span-3 text-xs text-zinc-500 text-center py-4">Няма свободни часове за тази дата.</p>';
+          grid.innerHTML = '<p class="col-span-3 sm:col-span-4 text-xs text-white/50 text-center py-4">Няма свободни часове за тази дата.</p>';
           return;
         }
 
+        const now = new Date();
+        const isToday = selectedDate === formatDateToString(now);
+
         slots.forEach(slot => {
           const isBooked = booked.includes(slot);
+          
+          let isPastTime = false;
+          if (isToday) {
+            const slotDateTime = parseDateTime(selectedDate, slot);
+            if (slotDateTime <= now) {
+              isPastTime = true;
+            }
+          }
+
           const btn = document.createElement('button');
 
-          if (isBooked) {
-            btn.className = 'py-2.5 text-xs font-bold rounded-xl border bg-black/40 text-zinc-700 border-zinc-900 cursor-not-allowed line-through';
+          if (isBooked || isPastTime) {
+            btn.className = 'py-2.5 text-xs font-bold rounded-xl border bg-[#000000]/40 text-white/30 border-[#262626]/30 cursor-not-allowed line-through';
             btn.innerText = slot;
             btn.disabled = true;
           } else {
             const isSelected = selectedTime === slot;
-            btn.className = `py-2.5 text-xs font-bold rounded-xl border transition active:scale-95 ${isSelected ? 'bg-white text-black border-white shadow-md' : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-700'}`;
+            btn.className = `py-2.5 text-xs font-bold rounded-xl border transition-all active:scale-95 ${isSelected ? 'bg-[#ffffff] text-[#000000] border-white font-extrabold shadow-lg shadow-white/20' : 'bg-[#000000] text-white border-[#262626] hover:border-white/50 hover:bg-[#000000]/80'}`;
             btn.innerText = slot;
             btn.onclick = () => {
+              hapticTick(10);
               selectedTime = slot;
               fetchTimeSlots();
+              updateStepIndicator();
               if (currentUser) {
                 document.getElementById('client-form').classList.remove('hidden');
                 document.getElementById('login-required-msg').classList.add('hidden');
@@ -542,7 +1224,31 @@
           }
           grid.appendChild(btn);
         });
+      }).catch(err => {
+        console.error('Грешка при зареждане на часове:', err);
       });
+    }
+
+    function spawnSuccessConfetti() {
+      const container = document.getElementById('success-confetti');
+      if (!container) return;
+      container.innerHTML = '';
+      const bits = ['#ffffff', '#e1e1e1', '#94a3b8', '#dc2626', '#2563eb'];
+      const shapes = ['50%', '2px'];
+      for (let i = 0; i < 18; i++) {
+        const bit = document.createElement('span');
+        const size = 5 + Math.random() * 4;
+        bit.className = 'confetti-bit';
+        bit.style.left = `${5 + Math.random() * 90}%`;
+        bit.style.width = `${size}px`;
+        bit.style.height = `${size}px`;
+        bit.style.background = bits[Math.floor(Math.random() * bits.length)];
+        bit.style.borderRadius = shapes[Math.floor(Math.random() * shapes.length)];
+        bit.style.animationDelay = `${Math.random() * 0.3}s`;
+        bit.style.animationDuration = `${0.9 + Math.random() * 0.6}s`;
+        container.appendChild(bit);
+      }
+      setTimeout(() => { container.innerHTML = ''; }, 1800);
     }
 
     function confirmBooking() {
@@ -552,122 +1258,154 @@
 
       if (!name || !phone) return showCustomAlert('Внимание', 'Моля попълнете име и телефонен номер!');
 
+      const btn = document.getElementById('confirm-booking-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="btn-spinner"></span> <span>Запазваме часа...</span>';
+
       db.collection('users').doc(currentUser.uid).set({
         name: name,
         phone: phone,
-        email: currentUser.email || ''
-      }, { merge: true }).then(() => {
-        return db.collection('bookings').add({
-          userId: currentUser.uid,
-          clientEmail: currentUser.email || '',
-          clientName: name,
-          clientPhone: phone,
-          date: selectedDate,
-          time: selectedTime,
-          status: 'pending',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      }).then(() => {
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+
+      const newBooking = {
+        userId: currentUser.uid,
+        clientEmail: currentUser.email || '',
+        clientName: name,
+        clientPhone: phone,
+        date: selectedDate,
+        time: selectedTime,
+        status: 'pending',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      db.collection('bookings').add(newBooking).then(() => {
+        hapticTick([10, 40, 15]);
         document.getElementById('success-modal-desc').innerText = `Успешно запазен час за ${selectedDate} в ${selectedTime}.`;
         document.getElementById('success-modal').classList.remove('hidden');
-      }).catch(err => showCustomAlert('Грешка', 'Грешка при запазване: ' + err.message));
+        spawnSuccessConfetti();
+
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="check-circle-2" class="w-4 h-4"></i> <span id="confirm-booking-btn-text">Потвърди резервацията</span>';
+        lucide.createIcons();
+      }).catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="check-circle-2" class="w-4 h-4"></i> <span id="confirm-booking-btn-text">Потвърди резервацията</span>';
+        showCustomAlert('Грешка', 'Не успяхме да запазим часа: ' + err.message);
+      });
     }
 
     function closeSuccessModalAndReload() {
-      location.reload();
+      document.getElementById('success-modal').classList.add('hidden');
+      selectedTime = '';
+      fetchTimeSlots();
+      updateStepIndicator();
     }
 
     function openMyAppointmentsModal() {
       if (!currentUser) return;
       document.getElementById('my-appointments-modal').classList.remove('hidden');
-      const listContainer = document.getElementById('client-appointments-list');
-      listContainer.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Зареждане на вашите часове...</p>';
+      renderAppointmentsSkeleton();
 
-      db.collection('bookings').where('userId', '==', currentUser.uid).get().then(snapshot => {
-        let items = [];
-        snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+      db.collection('bookings')
+        .where('userId', '==', currentUser.uid)
+        .get()
+        .then(snapshot => {
+          let items = [];
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.status !== 'cancelled') {
+              items.push({ id: doc.id, ...data });
+            }
+          });
 
-        items = items.filter(item => !item.status || item.status === 'pending');
-        items.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+          items.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
 
-        listContainer.innerHTML = '';
+          const listContainer = document.getElementById('client-appointments-list');
+          listContainer.innerHTML = '';
 
-        const infoBanner = document.createElement('div');
-        infoBanner.className = 'bg-zinc-950 border border-zinc-800 p-3 rounded-xl mb-3 text-[11px] text-zinc-400 space-y-1';
-        infoBanner.innerHTML = `
-          <p class="font-bold text-white flex items-center gap-1.5"><i data-lucide="info" class="w-3.5 h-3.5 text-emerald-400"></i> Информация за вашите часове:</p>
-          <p>• Всеки <strong>активен час</strong> може да се откаже до 24 часа преди записа.</p>
-          <p>• За да <strong>промените часа си</strong>, моля откажете настоящия и запазете нов от началния екран.</p>
-        `;
-        listContainer.appendChild(infoBanner);
-
-        if (items.length === 0) {
-          const emptyMsg = document.createElement('p');
-          emptyMsg.className = 'text-xs text-zinc-500 text-center py-4';
-          emptyMsg.innerText = 'Нямате активни запазени часове.';
-          listContainer.appendChild(emptyMsg);
-          lucide.createIcons();
-          return;
-        }
-
-        const now = new Date();
-
-        items.forEach(item => {
-          const appointmentDate = new Date(`${item.date}T${item.time}:00`);
-          const hoursLeft = (appointmentDate - now) / (1000 * 60 * 60);
-          const canCancelOrModify = hoursLeft > 24;
-
-          const itemDiv = document.createElement('div');
-          itemDiv.className = 'py-3.5 border-b border-zinc-800/60 last:border-none flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3';
-          
-          itemDiv.innerHTML = `
-            <div class="space-y-1.5 flex-grow">
-              <div class="flex items-center gap-2">
-                <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> АКТИВЕН ЧАС
-                </span>
-              </div>
-              <p class="font-bold text-white text-sm">${item.date} в <span class="text-emerald-400">${item.time}</span></p>
-              <p class="text-xs text-zinc-400">Клиент: ${item.clientName}</p>
-              
-              ${canCancelOrModify ? `
-                <p class="text-[11px] text-zinc-300 bg-zinc-950/80 p-2 rounded-xl border border-zinc-800 mt-1">
-                  💡 <span class="font-semibold text-white">Искате да смените часа?</span> Натиснете бутона <strong>„Откажи часа“</strong> и след това изберете нова дата и час от календара.
-                </p>
-              ` : `
-                <p class="text-[11px] text-amber-500 bg-amber-500/5 p-2 rounded-xl border border-amber-500/20 mt-1">
-                  🔒 <span class="font-semibold">Заключен час:</span> Остават по-малко от 24 часа. Отмяна или промяна вече не са възможни.
-                </p>
-              `}
-            </div>
-            
-            <div class="w-full sm:w-auto flex justify-end">
-              ${canCancelOrModify ? `
-                <button onclick="cancelClientBooking('${item.id}')" class="w-full sm:w-auto bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3.5 py-2 rounded-xl font-bold transition text-xs flex items-center justify-center gap-1.5 shadow-md">
-                  <i data-lucide="x-circle" class="w-4 h-4"></i> Откажи часа
-                </button>
-              ` : `
-                <span class="bg-zinc-800/80 text-zinc-500 border border-zinc-700 px-3.5 py-2 rounded-xl font-bold text-[11px] cursor-not-allowed">
-                  Заключен
-                </span>
-              `}
-            </div>
+          const infoBanner = document.createElement('div');
+          infoBanner.className = 'bg-[#000000] border border-[#262626] p-3 rounded-xl mb-3 text-[11px] text-white/70 space-y-1';
+          infoBanner.innerHTML = `
+            <p class="font-bold text-white flex items-center gap-1.5"><i data-lucide="info" class="w-3.5 h-3.5 text-[#e1e1e1]"></i> Информация за вашите часове:</p>
+            <p>• Всеки <strong>активен час</strong> може да се откаже до 24 часа преди записа.</p>
+            <p>• За да <strong>промените часа си</strong>, моля откажете настоящия и запазете нов от началния екран.</p>
           `;
-          listContainer.appendChild(itemDiv);
-        });
+          listContainer.appendChild(infoBanner);
 
-        lucide.createIcons();
-      });
+          if (items.length === 0) {
+            const emptyMsg = document.createElement('p');
+            emptyMsg.className = 'text-xs text-white/50 text-center py-4';
+            emptyMsg.innerText = 'Нямате активни запазени часове.';
+            listContainer.appendChild(emptyMsg);
+            lucide.createIcons();
+            return;
+          }
+
+          const now = new Date();
+
+          items.forEach(item => {
+            const appointmentDate = parseDateTime(item.date, item.time || '00:00');
+            const hoursLeft = (appointmentDate - now) / (1000 * 60 * 60);
+            const canCancelOrModify = hoursLeft > 24;
+
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'py-3.5 border-b border-[#262626] last:border-none flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3';
+            
+            itemDiv.innerHTML = `
+              <div class="space-y-1.5 flex-grow">
+                <div class="flex items-center gap-2">
+                  <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> АКТИВЕН ЧАС
+                  </span>
+                </div>
+                <p class="font-bold text-white text-sm">${item.date} в <span class="text-[#e1e1e1] font-extrabold">${item.time}</span></p>
+                <p class="text-xs text-white/70">Клиент: ${item.clientName}</p>
+                
+                ${canCancelOrModify ? `
+                  <p class="text-[11px] text-white/80 bg-[#000000]/80 p-2 rounded-xl border border-[#262626] mt-1">
+                    💡 <span class="font-semibold text-white">Искате да смените часа?</span> Натиснете бутона <strong>„Откажи часа“</strong> и след това изберете нова дата и час от календара.
+                  </p>
+                ` : `
+                  <p class="text-[11px] text-red-400 bg-red-500/10 p-2 rounded-xl border border-red-500/20 mt-1">
+                    🔒 <span class="font-semibold">Заключен час:</span> Остават по-малко от 24 часа. Отмяна или промяна вече не са възможни.
+                  </p>
+                `}
+              </div>
+              
+              <div class="w-full sm:w-auto flex justify-end">
+                ${canCancelOrModify ? `
+                  <button onclick="cancelClientBooking('${item.id}')" class="w-full sm:w-auto bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3.5 py-2 rounded-xl font-bold transition text-xs flex items-center justify-center gap-1.5 shadow-md">
+                    <i data-lucide="x-circle" class="w-4 h-4"></i> Откажи часа
+                  </button>
+                ` : `
+                  <span class="bg-[#000000] text-white/40 border border-[#262626] px-3.5 py-2 rounded-xl font-bold text-[11px] cursor-not-allowed">
+                    Заключен
+                  </span>
+                `}
+              </div>
+            `;
+            listContainer.appendChild(itemDiv);
+          });
+
+          lucide.createIcons();
+        })
+        .catch(err => {
+          console.error('Грешка при зареждане на часовете на клиента:', err);
+        });
     }
 
     function cancelClientBooking(bookingId) {
       showCustomConfirm('Отказ на запазен час', 'Сигурни ли сте, че искате да се откажете от този час? Часът ще бъде освободен за други клиенти.', () => {
         db.collection('bookings').doc(bookingId).update({
-          status: 'cancelled'
+          status: 'cancelled',
+          cancelledAt: firebase.firestore.FieldValue.serverTimestamp()
         }).then(() => {
+          hapticTick(15);
           openMyAppointmentsModal();
+          if (selectedDate) fetchTimeSlots();
         }).catch(err => {
-          showCustomAlert('Грешка', 'Грешка при отмяна на часа: ' + err.message);
+          showCustomAlert('Грешка', 'Не успяхме да откажем часа: ' + err.message);
         });
       });
     }
