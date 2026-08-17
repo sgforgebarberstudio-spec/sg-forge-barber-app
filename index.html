@@ -1,184 +1,209 @@
 <!DOCTYPE html>
 <html lang="bg">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SG FORGE Barber Studio - Резервация</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SG Forge - Barber Studio</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <style>
-    body { background-color: #050505; color: #ffffff; font-family: system-ui, -apple-system, sans-serif; }
-    .step-circle { width: 2rem; height: 2rem; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.75rem; border: 1px solid #262626; background: #000; color: #666; transition: all 0.3s; }
-    .step-circle.active { border-color: #fff; background: #fff; color: #000; }
-    .step-circle.done { border-color: #10b981; background: #10b981; color: #fff; }
-    .step-label { font-size: 0.7rem; color: #666; font-weight: 600; }
-    .step-label.active { color: #fff; }
-    .step-label.done { color: #10b981; }
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.92);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    .animate-fade-in-up {
+      animation: fadeInUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes modalScale {
+      from {
+        opacity: 0;
+        transform: scale(0.85);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    .animate-modal {
+      animation: modalScale 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
   </style>
 </head>
-<body class="min-h-screen pb-12">
+<body class="bg-black text-gray-100 min-h-screen font-sans pb-12 overflow-x-hidden selection:bg-white selection:text-black">
 
-  <!-- Splash Screen -->
-  <div id="splash-screen" class="fixed inset-0 bg-black z-50 flex items-center justify-center transition-opacity duration-700">
-    <div class="text-center">
-      <h1 class="text-3xl font-black tracking-widest uppercase text-white">SG FORGE</h1>
-      <p class="text-xs text-zinc-500 tracking-wider mt-1">BARBER STUDIO</p>
+  <!-- Премиум Splash Screen -->
+  <div id="splash-screen" class="fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]">
+    <div class="relative flex flex-col items-center space-y-4 px-6 text-center">
+      <div class="absolute -inset-12 bg-gradient-to-r from-zinc-800 via-zinc-700 to-zinc-900 rounded-full blur-3xl opacity-25 animate-pulse"></div>
+      <div class="relative z-10 space-y-2 animate-fade-in-up">
+        <h1 class="text-4xl sm:text-6xl font-black uppercase text-white tracking-[0.25em] drop-shadow-2xl">SG FORGE</h1>
+        <p class="text-xs sm:text-sm uppercase text-zinc-400 tracking-[0.4em] font-semibold">Barber Studio</p>
+      </div>
+      <div class="relative z-10 w-36 h-1 bg-zinc-900 rounded-full overflow-hidden mt-6 border border-zinc-800/80">
+        <div id="splash-progress" class="absolute top-0 left-0 h-full bg-white rounded-full w-0 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(255,255,255,0.9)]"></div>
+      </div>
     </div>
   </div>
 
-  <!-- Header -->
-  <header class="border-b border-[#262626] bg-black/60 backdrop-blur-md sticky top-0 z-40 px-4 py-3.5">
-    <div class="max-w-md mx-auto flex justify-between items-center">
-      <div>
-        <h1 class="font-extrabold text-base tracking-wider uppercase">SG FORGE</h1>
-        <div id="live-status-pill" class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mt-0.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span id="live-status-text">Отворен в момента</span>
-        </div>
-      </div>
+  <header class="border-b border-zinc-800 bg-zinc-950 p-4 flex justify-between items-center max-w-4xl mx-auto sticky top-0 z-50">
+    <div>
+      <h1 class="text-xl font-black uppercase text-white tracking-wider">SG FORGE</h1>
+      <p class="text-xs text-zinc-400">Barber Studio</p>
+    </div>
+    <div class="flex items-center gap-2">
       <div id="auth-header-container"></div>
     </div>
   </header>
 
-  <!-- Container -->
-  <main class="max-w-md mx-auto px-4 pt-6 space-y-6">
-
-    <!-- Stepper -->
-    <div class="bg-[#0a0a0a] border border-[#262626] rounded-2xl p-4">
-      <div class="flex items-center justify-between relative">
-        <div class="absolute top-4 left-6 right-6 h-[2px] bg-[#262626] -z-0">
-          <div id="step-line-1" class="h-full bg-emerald-500 w-0 transition-all duration-300"></div>
-          <div id="step-line-2" class="h-full bg-emerald-500 w-0 transition-all duration-300"></div>
-        </div>
-
-        <div class="relative z-10 flex flex-col items-center gap-1.5">
-          <div id="step-circle-1" class="step-circle active">1</div>
-          <span id="step-label-1" class="step-label active">Дата</span>
-        </div>
-        <div class="relative z-10 flex flex-col items-center gap-1.5">
-          <div id="step-circle-2" class="step-circle">2</div>
-          <span id="step-label-2" class="step-label">Час</span>
-        </div>
-        <div class="relative z-10 flex flex-col items-center gap-1.5">
-          <div id="step-circle-3" class="step-circle">3</div>
-          <span id="step-label-3" class="step-label">Данни</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Calendar Section -->
-    <section class="bg-[#0a0a0a] border border-[#262626] rounded-2xl p-4 space-y-3">
-      <h2 class="text-sm font-bold text-zinc-300 flex items-center gap-2">
-        <i data-lucide="calendar" class="w-4 h-4 text-white"></i> Изберете дата
-      </h2>
-      <div id="calendar-grid" class="grid grid-cols-4 gap-2"></div>
-    </section>
-
-    <!-- Time Slots Section -->
-    <section id="slots-container" class="bg-[#0a0a0a] border border-[#262626] rounded-2xl p-4 space-y-3 hidden">
-      <h2 class="text-sm font-bold text-zinc-300 flex items-center gap-2">
-        <i data-lucide="clock" class="w-4 h-4 text-white"></i> Изберете свободния час
-      </h2>
-      <div id="slots-grid" class="grid grid-cols-3 gap-2"></div>
-    </section>
-
-    <!-- Client Info / Booking Form Section -->
-    <section id="client-form" class="bg-[#0a0a0a] border border-[#262626] rounded-2xl p-4 space-y-4 hidden">
+  <main class="max-w-4xl mx-auto p-4 mt-6 space-y-6">
+    <!-- Основен екран за запазване на час -->
+    <div id="booking-section" class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-6 max-w-lg mx-auto">
+      <h2 class="text-lg font-bold text-white uppercase tracking-wider text-center">Запази час</h2>
+      
       <div>
-        <h2 class="text-sm font-bold text-white">Вашата резервация</h2>
-        <p id="selected-slot-info" class="text-xs text-emerald-400 font-semibold mt-0.5"></p>
+        <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2 text-center">Избери дата</label>
+        <div id="calendar-grid" class="grid grid-cols-7 gap-1.5 text-center text-xs"></div>
       </div>
 
-      <div class="space-y-3">
+      <div id="slots-container" class="hidden space-y-3">
+        <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 text-center">Избери свободен час</label>
+        <div id="slots-grid" class="grid grid-cols-3 gap-2"></div>
+      </div>
+
+      <!-- Форма за данни -->
+      <div id="client-form" class="hidden space-y-4 pt-2 border-t border-zinc-800">
+        <p id="selected-slot-info" class="text-xs text-emerald-400 font-bold text-center"></p>
         <div>
-          <label class="block text-xs font-bold text-zinc-400 mb-1">Вашето име *</label>
-          <input type="text" id="client-name" placeholder="Георги Иванов" class="w-full bg-black border border-[#262626] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-white">
+          <label class="block text-xs text-zinc-400 mb-1">Име и Фамилия</label>
+          <input type="text" id="client-name" placeholder="Въведете име..." class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-zinc-500" />
         </div>
         <div>
-          <label class="block text-xs font-bold text-zinc-400 mb-1">Телефонен номер *</label>
-          <input type="tel" id="client-phone" placeholder="089XXXXXXX" class="w-full bg-black border border-[#262626] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-white">
+          <label class="block text-xs text-zinc-400 mb-1">Телефонен номер</label>
+          <input type="tel" id="client-phone" maxlength="10" inputmode="numeric" pattern="[0-9]*" placeholder="089xxxxxxx" 
+                 oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);" 
+                 class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-sm text-white focus:outline-none focus:border-zinc-500" />
         </div>
-        <button id="confirm-booking-btn" onclick="confirmBooking()" class="w-full bg-white text-black font-extrabold py-3 rounded-xl text-sm hover:bg-zinc-200 transition-colors">
+        <button onclick="confirmBooking()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3 rounded-xl transition text-sm">
           Потвърди резервацията
         </button>
       </div>
-    </section>
 
-    <p id="login-required-msg" class="text-center text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl hidden">
-      Моля влезте в профила си (бутона вход/регистрация горе), за да потвърдите час.
-    </p>
-
+      <!-- Съобщение ако не е влязъл -->
+      <div id="login-required-msg" class="hidden text-center py-4 space-y-2 border-t border-zinc-800">
+        <p class="text-xs text-zinc-400">Трябва да влезете в профила си, за да запазите час.</p>
+        <button onclick="openAuthModal()" class="bg-white text-black font-bold text-xs py-2 px-4 rounded-xl hover:bg-zinc-200 transition">Вход / Регистрация</button>
+      </div>
+    </div>
   </main>
 
-  <!-- Auth Modal -->
-  <div id="auth-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-[#0a0a0a] border border-[#262626] rounded-2xl p-5 max-w-sm w-full space-y-4">
-      <div class="flex justify-between items-center">
-        <h3 class="font-bold text-base text-white">Вход / Регистрация</h3>
-        <button onclick="closeAuthModal()" class="text-zinc-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+  <!-- Универсален Стилен Модален прозорец за Известия и Грешки -->
+  <div id="alert-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center hidden z-[140] p-4">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative">
+      <div id="alert-modal-icon" class="w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-2">
+        <i data-lucide="alert-circle" class="w-6 h-6"></i>
       </div>
-      <p class="text-xs text-zinc-400">Въведете вашия имейл или използвайте бърз вход.</p>
-      
-      <div class="space-y-3">
-        <input type="email" id="auth-email" placeholder="имейл@domain.com" class="w-full bg-black border border-[#262626] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-white">
-        <button onclick="handleEmailAuth()" class="w-full bg-white text-black font-bold py-2.5 rounded-xl text-xs">Продължи с имейл</button>
-        <div class="relative flex items-center my-2">
-          <div class="flex-grow border-t border-[#262626]"></div>
-          <span class="px-2 text-[10px] text-zinc-500">или</span>
-          <div class="flex-grow border-t border-[#262626]"></div>
-        </div>
-        <button onclick="loginWithGoogle()" class="w-full bg-black border border-[#262626] text-white font-bold py-2.5 rounded-xl text-xs hover:bg-zinc-900 flex items-center justify-center gap-2">
-          Вход като Тестов Клиент
+      <h3 id="alert-modal-title" class="text-md font-bold text-white uppercase tracking-wider">Внимание</h3>
+      <p id="alert-modal-desc" class="text-xs text-zinc-400">Съобщение...</p>
+      <button onclick="closeCustomAlert()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition mt-2">
+        Разбрах
+      </button>
+    </div>
+  </div>
+
+  <!-- Стилен Модален прозорец за Потвърждение при Отказ -->
+  <div id="confirm-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center hidden z-[130] p-4">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative">
+      <div class="w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-2">
+        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+      </div>
+      <h3 id="confirm-modal-title" class="text-md font-bold text-white uppercase tracking-wider">Отказ на запазен час</h3>
+      <p id="confirm-modal-desc" class="text-xs text-zinc-400">Сигурни ли сте, че искате да се откажете от този час? Часът ще бъде освободен за други клиенти.</p>
+      <div class="flex gap-2.5 pt-2">
+        <button onclick="closeCustomConfirm(false)" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2.5 rounded-xl text-xs transition">
+          Запази го
+        </button>
+        <button id="confirm-modal-yes-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-lg shadow-red-500/20">
+          Да, откажи го
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Success Modal -->
-  <div id="success-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-[#0a0a0a] border border-[#262626] rounded-2xl p-6 max-w-sm w-full text-center space-y-4">
-      <div class="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-500/20">
+  <!-- Модален прозорец за Успешна Резервация -->
+  <div id="success-modal" class="fixed inset-0 bg-black/85 flex items-center justify-center hidden z-[120] p-4">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative">
+      <div class="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-2">
         <i data-lucide="check" class="w-6 h-6"></i>
       </div>
-      <h3 class="text-lg font-bold text-white">Резервацията е записана!</h3>
-      <p class="text-xs text-zinc-400">Часът ви е запазен успешно. Очакваме ви в SG FORGE Studio!</p>
-      <button onclick="closeSuccessModalAndReload()" class="w-full bg-white text-black font-bold py-2.5 rounded-xl text-xs">Затвори</button>
+      <h3 class="text-md font-bold text-white uppercase tracking-wider">Часът е запазен успешно!</h3>
+      <p id="success-modal-desc" class="text-xs text-zinc-400">Очакваме Ви в SG Forge Studio.</p>
+      <button onclick="closeSuccessModalAndReload()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition mt-2">
+        Супер, разбрах
+      </button>
     </div>
   </div>
 
-  <!-- My Appointments Modal -->
-  <div id="my-appointments-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-[#0a0a0a] border border-[#262626] rounded-2xl p-5 max-w-sm w-full space-y-4">
-      <div class="flex justify-between items-center border-b border-[#262626] pb-3">
-        <h3 class="font-bold text-sm text-white">Моите запазени часове</h3>
-        <button onclick="closeMyAppointmentsModal()" class="text-zinc-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+  <!-- Модален прозорец за Вход / Регистрация -->
+  <div id="auth-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl relative">
+      <div class="flex justify-between items-center">
+        <h3 id="auth-modal-title" class="text-md font-bold text-white uppercase tracking-wider">Вход в профила</h3>
+        <button onclick="closeAuthModal()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-1.5 px-3 rounded-lg border border-zinc-700 transition">Отказ</button>
       </div>
-      <div id="client-appointments-list" class="max-h-60 overflow-y-auto space-y-2"></div>
-    </div>
-  </div>
 
-  <!-- Alert Modal -->
-  <div id="alert-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-[#0a0a0a] border border-[#262626] rounded-2xl p-5 max-w-xs w-full text-center space-y-3">
-      <h3 id="alert-modal-title" class="font-bold text-sm text-white"></h3>
-      <p id="alert-modal-desc" class="text-xs text-zinc-400"></p>
-      <button onclick="closeCustomAlert()" class="w-full bg-white text-black font-bold py-2 rounded-xl text-xs">Добре</button>
-    </div>
-  </div>
+      <button onclick="loginWithGoogle()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+        <i data-lucide="globe" class="w-4 h-4"></i> Вход с Google
+      </button>
 
-  <!-- Confirm Modal -->
-  <div id="confirm-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-[#0a0a0a] border border-[#262626] rounded-2xl p-5 max-w-xs w-full text-center space-y-3">
-      <h3 id="confirm-modal-title" class="font-bold text-sm text-white"></h3>
-      <p id="confirm-modal-desc" class="text-xs text-zinc-400"></p>
-      <div class="flex gap-2">
-        <button onclick="closeCustomConfirm(false)" class="w-1/2 bg-black border border-[#262626] text-white font-bold py-2 rounded-xl text-xs">Отказ</button>
-        <button id="confirm-modal-yes-btn" class="w-1/2 bg-red-500 text-white font-bold py-2 rounded-xl text-xs">Да, отмени</button>
+      <div class="flex items-center my-2">
+        <div class="flex-grow border-t border-zinc-800"></div>
+        <span class="px-2 text-[10px] text-zinc-500 uppercase">или с имейл</span>
+        <div class="flex-grow border-t border-zinc-800"></div>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[11px] text-zinc-400 mb-1">Имейл</label>
+          <input type="email" id="auth-email" placeholder="name@example.com" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-[11px] text-zinc-400 mb-1">Парола</label>
+          <input type="password" id="auth-password" placeholder="••••••••" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none" />
+        </div>
+        <button id="auth-action-btn" onclick="handleEmailAuth()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-2.5 rounded-xl text-xs transition">Вход</button>
+      </div>
+
+      <div class="text-center pt-2">
+        <button onclick="toggleAuthMode()" id="auth-toggle-link" class="text-[11px] text-zinc-400 hover:text-white underline">Нямате профил? Регистрирайте се</button>
       </div>
     </div>
   </div>
+
+  <!-- Модален прозорец "Моите часове" -->
+  <div id="my-appointments-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50 p-4">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-md w-full space-y-4 shadow-2xl relative max-h-[90vh] flex flex-col">
+      <div class="flex justify-between items-center pb-2 border-b border-zinc-800">
+        <h3 class="text-md font-bold text-white uppercase tracking-wider">Моите запазени часове</h3>
+        <button onclick="closeMyAppointmentsModal()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 py-1.5 px-3 rounded-lg border border-zinc-700 transition">Затвори</button>
+      </div>
+      <div id="client-appointments-list" class="space-y-3 overflow-y-auto pr-1 flex-grow">
+        <p class="text-xs text-zinc-500 text-center py-4">Зареждане...</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="text-center text-xs text-zinc-600 mt-12">
+    SG FORGE BARBER STUDIO &copy; 2026
+  </footer>
 
   <script>
     const firebaseConfig = {
@@ -187,199 +212,239 @@
       projectId: "sgforge-barber-studio",
       storageBucket: "sgforge-barber-studio.firebasestorage.app",
       messagingSenderId: "207826077800",
-      appId: "1:207826077800:web:6e776663a44a20f8ee0cb5"
+      appId: "1:207826077800:web:6e776663a44a20f8ee0cb5",
+      measurementId: "G-8FNDXQC5VW"
     };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const auth = firebase.auth();
 
     let currentUser = null;
     let selectedDate = '';
     let selectedTime = '';
-    let allBookings = [];
-    let daysOffList = [];
     let scheduleSettings = { 
-      startTime: "10:00", endTime: "22:00", serviceDuration: 60, cleanDuration: 5, 
-      breakStart: "00:00", breakEnd: "00:00", sunStartTime: "10:00", sunEndTime: "14:00", 
-      sunServiceDuration: 60, sunCleanDuration: 5 
+      startTime: "09:00", 
+      endTime: "22:00", 
+      serviceDuration: 60, 
+      cleanDuration: 5, 
+      breakStart: "14:00", 
+      breakEnd: "16:00",
+      sunStartTime: "09:00",
+      sunEndTime: "14:00",
+      sunServiceDuration: 60,
+      sunCleanDuration: 5
     };
+    let daysOffList = [];
+    let isRegisterMode = false;
+    let confirmCallback = null;
 
-    db.collection("settings").doc("schedule").onSnapshot(doc => {
-      if(doc.exists) scheduleSettings = doc.data();
-      if(selectedDate) fetchTimeSlots();
-    });
-
-    db.collection("settings").doc("daysOff").onSnapshot(doc => {
-      if(doc.exists) daysOffList = doc.data().dates || [];
-      renderCalendar();
-    });
-
-    db.collection("bookings").onSnapshot(snapshot => {
-      allBookings = [];
-      snapshot.forEach(doc => allBookings.push({ id: doc.id, ...doc.data() }));
-      if(selectedDate) fetchTimeSlots();
-      if(document.getElementById('my-appointments-modal') && !document.getElementById('my-appointments-modal').classList.contains('hidden')) {
-          openMyAppointmentsModal();
+    function showCustomAlert(title, message, isError = true) {
+      document.getElementById('alert-modal-title').innerText = title;
+      document.getElementById('alert-modal-desc').innerText = message;
+      const iconContainer = document.getElementById('alert-modal-icon');
+      if (isError) {
+        iconContainer.className = 'w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-2';
+        iconContainer.innerHTML = '<i data-lucide="alert-circle" class="w-6 h-6"></i>';
+      } else {
+        iconContainer.className = 'w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-2';
+        iconContainer.innerHTML = '<i data-lucide="check" class="w-6 h-6"></i>';
       }
-    });
-
-    function formatDateToString(d) {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-
-    function parseDateString(dateStr) {
-      if (!dateStr) return new Date();
-      const parts = dateStr.split('-');
-      return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-    }
-
-    function parseDateTime(dateStr, timeStr) {
-      const dParts = dateStr.split('-');
-      const tParts = (timeStr || "00:00").split(':');
-      return new Date(parseInt(dParts[0], 10), parseInt(dParts[1], 10) - 1, parseInt(dParts[2], 10), parseInt(tParts[0], 10), parseInt(tParts[1], 10));
-    }
-
-    function updateStepIndicator() {
-      let step = 1;
-      if (selectedDate && selectedTime) step = 2;
-      if (selectedDate && selectedTime && currentUser) step = 3;
-
-      for (let i = 1; i <= 3; i++) {
-        const circle = document.getElementById(`step-circle-${i}`);
-        const label = document.getElementById(`step-label-${i}`);
-        if (!circle || !label) continue;
-        circle.classList.remove('active', 'done');
-        label.classList.remove('active', 'done');
-        if (i < step) {
-          circle.classList.add('done'); label.classList.add('done');
-          circle.innerHTML = '<i data-lucide="check" class="w-3 h-3"></i>';
-        } else if (i === step) {
-          circle.classList.add('active'); label.classList.add('active');
-          circle.innerText = i;
-        } else {
-          circle.innerText = i;
-        }
-      }
-      const line1 = document.getElementById('step-line-1');
-      const line2 = document.getElementById('step-line-2');
-      if (line1) line1.style.width = step >= 2 ? '100%' : '0%';
-      if (line2) line2.style.width = step >= 3 ? '100%' : '0%';
+      document.getElementById('alert-modal').classList.remove('hidden');
       lucide.createIcons();
     }
 
-    function showCustomAlert(title, message) {
-      document.getElementById('alert-modal-title').innerText = title;
-      document.getElementById('alert-modal-desc').innerText = message;
-      document.getElementById('alert-modal').classList.remove('hidden');
+    function closeCustomAlert() {
+      document.getElementById('alert-modal').classList.add('hidden');
     }
-    function closeCustomAlert() { document.getElementById('alert-modal').classList.add('hidden'); }
 
-    let confirmCallback = null;
     function showCustomConfirm(title, message, onConfirm) {
       document.getElementById('confirm-modal-title').innerText = title;
       document.getElementById('confirm-modal-desc').innerText = message;
       confirmCallback = onConfirm;
       document.getElementById('confirm-modal').classList.remove('hidden');
-      document.getElementById('confirm-modal-yes-btn').onclick = () => closeCustomConfirm(true);
+      
+      const yesBtn = document.getElementById('confirm-modal-yes-btn');
+      yesBtn.onclick = () => {
+        closeCustomConfirm(true);
+      };
+      lucide.createIcons();
     }
+
     function closeCustomConfirm(result) {
       document.getElementById('confirm-modal').classList.add('hidden');
-      if (result && typeof confirmCallback === 'function') confirmCallback();
+      if (result && typeof confirmCallback === 'function') {
+        confirmCallback();
+      }
       confirmCallback = null;
     }
 
-    function updateLiveStatus() {
-      const now = new Date();
-      const day = now.getDay();
-      const currentTime = now.getHours() + (now.getMinutes() / 60);
-      const text = document.getElementById('live-status-text');
-      const pill = document.getElementById('live-status-pill');
-      if (!pill || !text) return;
-
-      let isOpen = false;
-      if (day >= 2 && day <= 6 && currentTime >= 10 && currentTime < 22) isOpen = true;
-      else if (day === 0 && currentTime >= 10 && currentTime < 14) isOpen = true;
-
-      if (isOpen) {
-        pill.className = "inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mt-0.5";
-        text.innerText = "Отворен в момента";
-      } else {
-        pill.className = "inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 mt-0.5";
-        text.innerText = "Затворен в момента";
+    window.onload = () => {
+      const progressBar = document.getElementById('splash-progress');
+      if (progressBar) {
+        setTimeout(() => { progressBar.style.width = '100%'; }, 80);
       }
-    }
 
-    function openAuthModal() { document.getElementById('auth-modal').classList.remove('hidden'); }
-    function closeAuthModal() { document.getElementById('auth-modal').classList.add('hidden'); }
-    
-    function loginWithGoogle() {
-      currentUser = { uid: 'test-user-123', email: 'test@sgforge.bg', displayName: 'Тестов Клиент' };
-      updateHeaderAuthUI();
-      closeAuthModal();
-    }
-    function handleEmailAuth() {
-      const email = document.getElementById('auth-email').value || 'test@sgforge.bg';
-      currentUser = { uid: 'test-user-123', email: email, displayName: 'Тестов Клиент' };
-      updateHeaderAuthUI();
-      closeAuthModal();
-    }
-    function logoutUser() {
-      currentUser = null;
-      updateHeaderAuthUI();
+      setTimeout(() => {
+        const splash = document.getElementById('splash-screen');
+        if (splash) {
+          splash.style.opacity = '0';
+          splash.style.transform = 'scale(1.06)';
+          setTimeout(() => splash.remove(), 700);
+        }
+      }, 1200);
+
+      loadSettingsAndDaysOff();
+      auth.onAuthStateChanged(user => {
+        currentUser = user;
+        updateHeaderAuthUI();
+        if (currentUser) {
+          loadUserProfile();
+        }
+      });
+    };
+
+    function loadUserProfile() {
+      if (!currentUser) return;
+      db.collection('users').doc(currentUser.uid).get().then(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          const nameInput = document.getElementById('client-name');
+          const phoneInput = document.getElementById('client-phone');
+          if (nameInput && data.name) nameInput.value = data.name;
+          if (phoneInput && data.phone) phoneInput.value = data.phone;
+        }
+      }).catch(err => console.log('Грешка при зареждане на профил:', err));
     }
 
     function updateHeaderAuthUI() {
       const container = document.getElementById('auth-header-container');
       const clientForm = document.getElementById('client-form');
       const loginReqMsg = document.getElementById('login-required-msg');
+
       if (currentUser) {
         container.innerHTML = `
           <div class="flex items-center gap-2">
-            <button onclick="openMyAppointmentsModal()" class="text-xs bg-[#000000] hover:bg-[#141414] text-white py-1.5 px-3 rounded-xl border border-[#262626] font-bold flex items-center gap-1.5"><i data-lucide="calendar" class="w-3.5 h-3.5"></i> Часове</button>
-            <button onclick="logoutUser()" class="text-xs bg-[#000000] text-red-400 py-1.5 px-2.5 rounded-xl border border-[#262626]">Изход</button>
+            <button onclick="openMyAppointmentsModal()" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-zinc-300 py-2 px-3 rounded-xl border border-zinc-800 transition flex items-center gap-1.5 font-bold">
+              <i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-400"></i> Часове
+            </button>
+            <button onclick="logoutUser()" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-red-400 py-2 px-3 rounded-xl border border-zinc-800 transition">
+              Изход
+            </button>
           </div>
         `;
         if (selectedTime) clientForm.classList.remove('hidden');
         loginReqMsg.classList.add('hidden');
       } else {
-        container.innerHTML = `<button onclick="openAuthModal()" class="text-xs bg-[#ffffff] text-[#000000] font-extrabold py-2 px-3.5 rounded-xl">Вход / Регистрация</button>`;
+        container.innerHTML = `
+          <button onclick="openAuthModal()" class="text-xs bg-white hover:bg-zinc-200 text-black font-bold py-2 px-3.5 rounded-xl transition">
+            Вход / Регистрация
+          </button>
+        `;
         clientForm.classList.add('hidden');
         if (selectedTime) loginReqMsg.classList.remove('hidden');
       }
       lucide.createIcons();
     }
 
+    function openAuthModal() {
+      document.getElementById('auth-modal').classList.remove('hidden');
+    }
+    function closeAuthModal() {
+      document.getElementById('auth-modal').classList.add('hidden');
+    }
+
+    function toggleAuthMode() {
+      isRegisterMode = !isRegisterMode;
+      document.getElementById('auth-modal-title').innerText = isRegisterMode ? 'Регистрация' : 'Вход в профила';
+      document.getElementById('auth-action-btn').innerText = isRegisterMode ? 'Регистрирай се' : 'Вход';
+      document.getElementById('auth-toggle-link').innerText = isRegisterMode ? 'Вече имате профил? Влезте' : 'Нямате профил? Регистрирайте се';
+    }
+
+    function loginWithGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).then(() => {
+        closeAuthModal();
+      }).catch(err => showCustomAlert('Грешка при Google вход', err.message));
+    }
+
+    function handleEmailAuth() {
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value.trim();
+
+      if (!email || !password) return showCustomAlert('Внимание', 'Попълнете имейл и парола!');
+
+      if (isRegisterMode) {
+        auth.createUserWithEmailAndPassword(email, password).then(() => {
+          closeAuthModal();
+        }).catch(err => showCustomAlert('Грешка при регистрация', err.message));
+      } else {
+        auth.signInWithEmailAndPassword(email, password).then(() => {
+          closeAuthModal();
+        }).catch(err => showCustomAlert('Грешка при вход', err.message));
+      }
+    }
+
+    function logoutUser() {
+      auth.signOut().then(() => {
+        location.reload();
+      });
+    }
+
+    function loadSettingsAndDaysOff() {
+      db.collection('settings').doc('schedule').get().then(doc => {
+        if (doc.exists) {
+          scheduleSettings = { ...scheduleSettings, ...doc.data() };
+        }
+      });
+      db.collection('settings').doc('daysOff').get().then(doc => {
+        if (doc.exists && doc.data().dates) daysOffList = doc.data().dates;
+        renderCalendar();
+      });
+    }
+
     function renderCalendar() {
       const grid = document.getElementById('calendar-grid');
       grid.innerHTML = '';
+      
       const now = new Date();
-      const year = now.getFullYear(), month = now.getMonth();
+      const year = now.getFullYear();
+      const month = now.getMonth();
       const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const todayStr = formatDateToString(now);
+      
+      const todayY = now.getFullYear();
+      const todayM = String(now.getMonth() + 1).padStart(2, '0');
+      const todayD = String(now.getDate()).padStart(2, '0');
+      const todayStr = `${todayY}-${todayM}-${todayD}`;
 
       for (let day = 1; day <= daysInMonth; day++) {
         const d = new Date(year, month, day);
-        const dateStr = formatDateToString(d);
-        const isMonday = d.getDay() === 1;
-        const isOff = daysOffList.includes(dateStr) || isMonday;
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+
+        const dayName = d.toLocaleDateString('bg-BG', { weekday: 'short' });
+        const isOff = daysOffList.includes(dateStr);
         const isPast = dateStr < todayStr;
-        const isSelected = selectedDate === dateStr;
 
         const btn = document.createElement('button');
+        const isSelected = selectedDate === dateStr;
+
         if (isOff || isPast) {
-          btn.className = 'p-2.5 rounded-xl border bg-[#000000]/40 text-white/30 border-[#262626]/30 cursor-not-allowed opacity-40 text-xs';
-          btn.innerHTML = `<span class="uppercase font-bold text-[9px]">${isOff ? 'Почивка' : 'Мин.'}</span><br><span class="font-bold line-through">${day}</span>`;
+          btn.className = 'p-2.5 rounded-xl border bg-black/20 text-zinc-700 border-zinc-900 cursor-not-allowed flex flex-col items-center opacity-40 text-xs';
+          btn.innerHTML = `<span class="uppercase font-bold text-[9px]">${isOff ? 'Почивка' : 'Мин.'}</span><span class="font-bold line-through">${day}</span>`;
           btn.disabled = true;
         } else {
-          btn.className = `p-2.5 rounded-xl border transition-all text-xs ${isSelected ? 'bg-[#ffffff] text-[#000000] font-extrabold' : 'bg-[#000000] text-white border-[#262626]'}`;
-          btn.innerHTML = `<span class="uppercase font-bold text-[9px]">${d.toLocaleDateString('bg-BG', { weekday: 'short' })}</span><br><span class="font-bold text-sm">${day}</span>`;
+          btn.className = `p-2.5 rounded-xl border flex flex-col items-center transition active:scale-95 text-xs ${isSelected ? 'bg-white text-black border-white shadow-md font-bold' : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-700'}`;
+          btn.innerHTML = `<span class="uppercase font-bold text-[9px] ${isSelected ? 'text-zinc-600' : 'text-zinc-500'}">${dayName}</span><span class="font-bold">${day}</span>`;
           btn.onclick = () => {
             selectedDate = dateStr;
             selectedTime = '';
             document.getElementById('client-form').classList.add('hidden');
-            renderCalendar(); updateStepIndicator(); fetchTimeSlots();
+            document.getElementById('login-required-msg').classList.add('hidden');
+            renderCalendar();
+            fetchTimeSlots();
           };
         }
         grid.appendChild(btn);
@@ -387,62 +452,96 @@
     }
 
     function generateTimeSlots() {
-      if (!selectedDate) return [];
-      const dayOfWeek = parseDateString(selectedDate).getDay();
-      if (dayOfWeek === 1) return [];
-      const isSun = dayOfWeek === 0;
+      const slots = [];
+      const isSunday = new Date(selectedDate).getDay() === 0;
+
+      const serviceDuration = isSunday ? (Number(scheduleSettings.sunServiceDuration) || Number(scheduleSettings.serviceDuration)) : Number(scheduleSettings.serviceDuration);
+      const cleanDuration = isSunday ? (Number(scheduleSettings.sunCleanDuration) || Number(scheduleSettings.cleanDuration)) : Number(scheduleSettings.cleanDuration);
       
-      const sDur = Number(isSun ? scheduleSettings.sunServiceDuration : scheduleSettings.serviceDuration);
-      const cDur = Number(isSun ? scheduleSettings.sunCleanDuration : scheduleSettings.cleanDuration);
-      const start = isSun ? scheduleSettings.sunStartTime : scheduleSettings.startTime;
-      const end = isSun ? scheduleSettings.sunEndTime : scheduleSettings.endTime;
+      const totalSlotTime = serviceDuration + cleanDuration;
+      
+      let start = scheduleSettings.startTime;
+      let end = scheduleSettings.endTime;
+      let bStart = scheduleSettings.breakStart;
+      let bEnd = scheduleSettings.breakEnd;
+
+      if (isSunday) {
+        start = scheduleSettings.sunStartTime || "09:00";  
+        end = scheduleSettings.sunEndTime || "14:00";    
+        bStart = "00:00"; 
+        bEnd = "00:00";   
+      }
 
       let [h, m] = start.split(':').map(Number);
       let [endH, endM] = end.split(':').map(Number);
       let currentMin = h * 60 + m;
       const endMin = endH * 60 + endM;
 
-      const slots = [];
-      while (currentMin + sDur <= endMin) {
-        slots.push(`${String(Math.floor(currentMin / 60)).padStart(2, '0')}:${String(currentMin % 60).padStart(2, '0')}`);
-        currentMin += (sDur + cDur);
+      let [bStartH, bStartM] = bStart.split(':').map(Number);
+      let [bEndH, bEndM] = bEnd.split(':').map(Number);
+      const breakStartMin = bStartH * 60 + bStartM;
+      const breakEndMin = bEndH * 60 + bEndM;
+
+      while (currentMin + serviceDuration <= endMin) {
+        if (!(bStart !== "00:00" && bEnd !== "00:00" && currentMin >= breakStartMin && currentMin < breakEndMin)) {
+          const slotH = String(Math.floor(currentMin / 60)).padStart(2, '0');
+          const slotM = String(currentMin % 60).padStart(2, '0');
+          slots.push(`${slotH}:${slotM}`);
+        }
+        currentMin += totalSlotTime;
       }
       return slots;
     }
 
     function fetchTimeSlots() {
       document.getElementById('slots-container').classList.remove('hidden');
-      const booked = allBookings.filter(b => b.date === selectedDate && b.status !== 'cancelled').map(b => b.time);
-      const slots = generateTimeSlots();
       const grid = document.getElementById('slots-grid');
-      grid.innerHTML = '';
+      grid.innerHTML = '<p class="col-span-3 text-xs text-zinc-500 text-center py-4">Зареждане на часове...</p>';
 
-      const now = new Date();
-      slots.forEach(slot => {
-        const isBooked = booked.includes(slot);
-        const isPast = (selectedDate === formatDateToString(now)) && (parseDateTime(selectedDate, slot) <= now);
-        
-        const btn = document.createElement('button');
-        if (isBooked || isPast) {
-          btn.className = 'py-2.5 text-xs font-bold rounded-xl border bg-[#000000]/40 text-white/30 border-[#262626]/30 cursor-not-allowed line-through';
-          btn.innerText = slot;
-          btn.disabled = true;
-        } else {
-          btn.className = `py-2.5 text-xs font-bold rounded-xl border ${selectedTime === slot ? 'bg-[#ffffff] text-[#000000]' : 'bg-[#000000] text-white border-[#262626]'}`;
-          btn.innerText = slot;
-          btn.onclick = () => {
-            selectedTime = slot;
-            fetchTimeSlots(); updateStepIndicator();
-            if (currentUser) {
-              document.getElementById('client-form').classList.remove('hidden');
-              document.getElementById('login-required-msg').classList.add('hidden');
-            } else {
-              document.getElementById('login-required-msg').classList.remove('hidden');
-            }
-            document.getElementById('selected-slot-info').innerText = `Избран час: ${selectedDate} в ${selectedTime}`;
-          };
+      db.collection('bookings').where('date', '==', selectedDate).get().then(snapshot => {
+        let booked = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.time && data.status !== 'cancelled') {
+            booked.push(data.time);
+          }
+        });
+        const slots = generateTimeSlots();
+
+        grid.innerHTML = '';
+        if (slots.length === 0) {
+          grid.innerHTML = '<p class="col-span-3 text-xs text-zinc-500 text-center py-4">Няма свободни часове за тази дата.</p>';
+          return;
         }
-        grid.appendChild(btn);
+
+        slots.forEach(slot => {
+          const isBooked = booked.includes(slot);
+          const btn = document.createElement('button');
+
+          if (isBooked) {
+            btn.className = 'py-2.5 text-xs font-bold rounded-xl border bg-black/40 text-zinc-700 border-zinc-900 cursor-not-allowed line-through';
+            btn.innerText = slot;
+            btn.disabled = true;
+          } else {
+            const isSelected = selectedTime === slot;
+            btn.className = `py-2.5 text-xs font-bold rounded-xl border transition active:scale-95 ${isSelected ? 'bg-white text-black border-white shadow-md' : 'bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-700'}`;
+            btn.innerText = slot;
+            btn.onclick = () => {
+              selectedTime = slot;
+              fetchTimeSlots();
+              if (currentUser) {
+                document.getElementById('client-form').classList.remove('hidden');
+                document.getElementById('login-required-msg').classList.add('hidden');
+                loadUserProfile();
+              } else {
+                document.getElementById('client-form').classList.add('hidden');
+                document.getElementById('login-required-msg').classList.remove('hidden');
+              }
+              document.getElementById('selected-slot-info').innerText = `Избран час: ${selectedDate} в ${selectedTime}`;
+            };
+          }
+          grid.appendChild(btn);
+        });
       });
     }
 
@@ -450,74 +549,133 @@
       if (!currentUser) return showCustomAlert('Внимание', 'Моля влезте в профила си!');
       const name = document.getElementById('client-name').value.trim();
       const phone = document.getElementById('client-phone').value.trim();
-      if (!name || !phone) return showCustomAlert('Внимание', 'Попълнете име и телефон!');
 
-      const btn = document.getElementById('confirm-booking-btn');
-      btn.disabled = true;
-      btn.innerHTML = 'Запазване...';
+      if (!name || !phone) return showCustomAlert('Внимание', 'Моля попълнете име и телефонен номер!');
 
-      db.collection("bookings").add({
-        userId: currentUser.uid,
-        clientEmail: currentUser.email || '',
-        clientName: name,
-        clientPhone: phone,
-        date: selectedDate,
-        time: selectedTime,
-        status: 'pending',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      db.collection('users').doc(currentUser.uid).set({
+        name: name,
+        phone: phone,
+        email: currentUser.email || ''
+      }, { merge: true }).then(() => {
+        return db.collection('bookings').add({
+          userId: currentUser.uid,
+          clientEmail: currentUser.email || '',
+          clientName: name,
+          clientPhone: phone,
+          date: selectedDate,
+          time: selectedTime,
+          status: 'pending',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
       }).then(() => {
+        document.getElementById('success-modal-desc').innerText = `Успешно запазен час за ${selectedDate} в ${selectedTime}.`;
         document.getElementById('success-modal').classList.remove('hidden');
-        btn.disabled = false;
-        btn.innerHTML = 'Потвърди резервацията';
-      });
+      }).catch(err => showCustomAlert('Грешка', 'Грешка при запазване: ' + err.message));
     }
 
     function closeSuccessModalAndReload() {
-      document.getElementById('success-modal').classList.add('hidden');
-      selectedTime = ''; fetchTimeSlots(); updateStepIndicator();
+      location.reload();
     }
 
     function openMyAppointmentsModal() {
       if (!currentUser) return;
       document.getElementById('my-appointments-modal').classList.remove('hidden');
-      const list = document.getElementById('client-appointments-list');
-      list.innerHTML = '';
-      
-      const myBookings = allBookings.filter(b => b.userId === currentUser.uid && b.status !== 'cancelled');
-      if(myBookings.length === 0) {
-          list.innerHTML = '<p class="text-xs text-white/50 text-center py-4">Нямате активни часове.</p>'; return;
-      }
-      
-      myBookings.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'py-3 border-b border-[#262626] text-white flex justify-between items-center';
-        div.innerHTML = `
-          <div>
-            <p class="font-bold text-sm">${item.date} в ${item.time}</p>
-            <p class="text-xs text-white/70">${item.clientName}</p>
-          </div>
-          <button onclick="cancelClientBooking('${item.id}')" class="bg-red-500/10 text-red-400 px-3 py-1 rounded text-xs border border-red-500/20">Откажи</button>
+      const listContainer = document.getElementById('client-appointments-list');
+      listContainer.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">Зареждане на вашите часове...</p>';
+
+      db.collection('bookings').where('userId', '==', currentUser.uid).get().then(snapshot => {
+        let items = [];
+        snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+
+        items = items.filter(item => !item.status || item.status === 'pending');
+        items.sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+
+        listContainer.innerHTML = '';
+
+        const infoBanner = document.createElement('div');
+        infoBanner.className = 'bg-zinc-950 border border-zinc-800 p-3 rounded-xl mb-3 text-[11px] text-zinc-400 space-y-1';
+        infoBanner.innerHTML = `
+          <p class="font-bold text-white flex items-center gap-1.5"><i data-lucide="info" class="w-3.5 h-3.5 text-emerald-400"></i> Информация за вашите часове:</p>
+          <p>• Всеки <strong>активен час</strong> може да се откаже до 24 часа преди записа.</p>
+          <p>• За да <strong>промените часа си</strong>, моля откажете настоящия и запазете нов от началния екран.</p>
         `;
-        list.appendChild(div);
+        listContainer.appendChild(infoBanner);
+
+        if (items.length === 0) {
+          const emptyMsg = document.createElement('p');
+          emptyMsg.className = 'text-xs text-zinc-500 text-center py-4';
+          emptyMsg.innerText = 'Нямате активни запазени часове.';
+          listContainer.appendChild(emptyMsg);
+          lucide.createIcons();
+          return;
+        }
+
+        const now = new Date();
+
+        items.forEach(item => {
+          const appointmentDate = new Date(`${item.date}T${item.time}:00`);
+          const hoursLeft = (appointmentDate - now) / (1000 * 60 * 60);
+          const canCancelOrModify = hoursLeft > 24;
+
+          const itemDiv = document.createElement('div');
+          itemDiv.className = 'py-3.5 border-b border-zinc-800/60 last:border-none flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3';
+          
+          itemDiv.innerHTML = `
+            <div class="space-y-1.5 flex-grow">
+              <div class="flex items-center gap-2">
+                <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> АКТИВЕН ЧАС
+                </span>
+              </div>
+              <p class="font-bold text-white text-sm">${item.date} в <span class="text-emerald-400">${item.time}</span></p>
+              <p class="text-xs text-zinc-400">Клиент: ${item.clientName}</p>
+              
+              ${canCancelOrModify ? `
+                <p class="text-[11px] text-zinc-300 bg-zinc-950/80 p-2 rounded-xl border border-zinc-800 mt-1">
+                  💡 <span class="font-semibold text-white">Искате да смените часа?</span> Натиснете бутона <strong>„Откажи часа“</strong> и след това изберете нова дата и час от календара.
+                </p>
+              ` : `
+                <p class="text-[11px] text-amber-500 bg-amber-500/5 p-2 rounded-xl border border-amber-500/20 mt-1">
+                  🔒 <span class="font-semibold">Заключен час:</span> Остават по-малко от 24 часа. Отмяна или промяна вече не са възможни.
+                </p>
+              `}
+            </div>
+            
+            <div class="w-full sm:w-auto flex justify-end">
+              ${canCancelOrModify ? `
+                <button onclick="cancelClientBooking('${item.id}')" class="w-full sm:w-auto bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3.5 py-2 rounded-xl font-bold transition text-xs flex items-center justify-center gap-1.5 shadow-md">
+                  <i data-lucide="x-circle" class="w-4 h-4"></i> Откажи часа
+                </button>
+              ` : `
+                <span class="bg-zinc-800/80 text-zinc-500 border border-zinc-700 px-3.5 py-2 rounded-xl font-bold text-[11px] cursor-not-allowed">
+                  Заключен
+                </span>
+              `}
+            </div>
+          `;
+          listContainer.appendChild(itemDiv);
+        });
+
+        lucide.createIcons();
       });
     }
 
-    function cancelClientBooking(id) {
-      showCustomConfirm('Отказ', 'Сигурни ли сте?', () => {
-        db.collection("bookings").doc(id).update({ status: 'cancelled' });
+    function cancelClientBooking(bookingId) {
+      showCustomConfirm('Отказ на запазен час', 'Сигурни ли сте, че искате да се откажете от този час? Часът ще бъде освободен за други клиенти.', () => {
+        db.collection('bookings').doc(bookingId).update({
+          status: 'cancelled'
+        }).then(() => {
+          openMyAppointmentsModal();
+        }).catch(err => {
+          showCustomAlert('Грешка', 'Грешка при отмяна на часа: ' + err.message);
+        });
       });
     }
-    function closeMyAppointmentsModal() { document.getElementById('my-appointments-modal').classList.add('hidden'); }
 
-    window.onload = () => {
-      setTimeout(() => {
-        const splash = document.getElementById('splash-screen');
-        if (splash) { splash.style.opacity = '0'; setTimeout(() => splash.remove(), 700); }
-      }, 800);
-      updateLiveStatus();
-      updateHeaderAuthUI();
-      renderCalendar();
-    };
+    function closeMyAppointmentsModal() {
+      document.getElementById('my-appointments-modal').classList.add('hidden');
+    }
+
     lucide.createIcons();
   </script>
 </body>
