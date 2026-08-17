@@ -1,153 +1,181 @@
 <!DOCTYPE html>
 <html lang="bg">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title id="page-title">SG Forge - Административен Панел</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <style>
-    body { background-color: #09090b; color: #f4f4f5; font-family: system-ui, -apple-system, sans-serif; }
-  </style>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 </head>
-<body class="min-h-screen pb-12">
+<body class="bg-black text-gray-100 min-h-screen font-sans pb-12">
 
-  <!-- Admin Login Modal -->
-  <div id="admin-login-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-xs w-full space-y-4">
-      <div class="text-center space-y-1">
-        <h2 id="txt-login-title" class="font-black text-lg text-white">Административен достъп</h2>
-        <p id="txt-login-desc" class="text-xs text-zinc-400">Въведете секретния код:</p>
-      </div>
-      <input type="password" id="admin-pass-input" placeholder="Парола..." class="w-full bg-black border border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-zinc-500 text-center tracking-widest">
-      <button id="txt-login-btn" onclick="checkAdminPassword()" class="w-full bg-white text-black font-extrabold py-2.5 rounded-xl text-xs hover:bg-zinc-200">
-        Вход
+  <!-- Модал за вход в админ панела -->
+  <div id="admin-login-modal" class="fixed inset-0 bg-black z-[100] flex items-center justify-center p-4">
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center">
+      <h2 id="txt-login-title" class="text-lg font-black uppercase text-white tracking-wider">Административен достъп</h2>
+      <p id="txt-login-desc" class="text-xs text-zinc-400">Въведете секретния код за управление:</p>
+      <input type="password" id="admin-pass-input" placeholder="••••" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-center text-lg text-white tracking-widest focus:outline-none focus:border-zinc-500" />
+      <button onclick="checkAdminPassword()" id="txt-login-btn" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3 rounded-xl transition text-sm">
+        Вход в панела
       </button>
     </div>
   </div>
 
-  <!-- Header -->
-  <header class="border-b border-zinc-800 bg-black/60 backdrop-blur-md sticky top-0 z-40 px-4 py-3.5">
-    <div class="max-w-3xl mx-auto flex justify-between items-center">
-      <div>
-        <h1 class="font-black text-base tracking-widest uppercase">SG FORGE</h1>
-        <p id="txt-subtitle" class="text-xs text-zinc-400 font-semibold">Админ Панел</p>
-      </div>
-      <div class="flex items-center gap-2">
-        <button onclick="toggleLanguage()" class="text-xs bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1">
-          <span id="lang-btn-text">ES 🇪🇸</span>
-        </button>
-        <button id="txt-logout" onclick="adminLogout()" class="text-xs bg-red-500/10 text-red-400 border border-red-500/20 px-3 py-1.5 rounded-xl font-bold">
-          Изход
-        </button>
-      </div>
+  <header class="border-b border-zinc-800 bg-zinc-950 p-4 flex justify-between items-center max-w-4xl mx-auto sticky top-0 z-50">
+    <div>
+      <h1 class="text-xl font-black uppercase text-white tracking-wider">SG FORGE</h1>
+      <p id="txt-subtitle" class="text-xs text-zinc-400">Административен Панел</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <!-- Езиков превключвател -->
+      <button onclick="toggleLanguage()" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-zinc-200 py-2 px-3 rounded-xl border border-zinc-800 transition flex items-center gap-1.5 font-bold">
+        <i data-lucide="globe" class="w-3.5 h-3.5 text-emerald-400"></i>
+        <span id="lang-btn-text">ES 🇪🇸</span>
+      </button>
+      <button onclick="adminLogout()" id="txt-logout" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-red-400 py-2 px-3 rounded-xl border border-zinc-800 transition">
+        Изход
+      </button>
     </div>
   </header>
 
-  <!-- Content -->
-  <main class="max-w-3xl mx-auto px-4 pt-6 space-y-6">
-
-    <!-- Active Bookings -->
-    <section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
-      <div class="flex justify-between items-center">
-        <h2 id="txt-active-bookings-title" class="text-sm font-extrabold text-white flex items-center gap-2">
-          <i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i> Активни часове
-        </h2>
-        <span id="active-count" class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full text-xs font-bold">0</span>
-      </div>
-      <div id="active-bookings-list" class="divide-y divide-zinc-800/60 max-h-80 overflow-y-auto"></div>
-    </section>
-
-    <!-- Schedule Settings -->
-    <section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
-      <h2 id="txt-settings-title" class="text-sm font-extrabold text-white flex items-center gap-2">
-        <i data-lucide="clock" class="w-4 h-4 text-white"></i> График (Пон - Съб)
+  <main class="max-w-4xl mx-auto p-4 mt-6 space-y-6">
+    
+    <!-- Настройки на стандартен график -->
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
+      <h2 id="txt-settings-title" class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
+        <i data-lucide="settings" class="w-4 h-4 text-zinc-400"></i> Стандартен график (Пон - Съб)
       </h2>
-      <div class="grid grid-cols-2 gap-3 text-xs">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
         <div>
-          <label id="txt-start-time" class="block text-zinc-400 mb-1">Начало</label>
-          <input type="time" id="set-start-time" class="w-full bg-black border border-zinc-800 rounded-xl p-2.5 text-white">
+          <label id="txt-start-time" class="block text-zinc-400 mb-1">Начало на деня</label>
+          <input type="time" id="set-start-time" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
         </div>
         <div>
-          <label id="txt-end-time" class="block text-zinc-400 mb-1">Край</label>
-          <input type="time" id="set-end-time" class="w-full bg-black border border-zinc-800 rounded-xl p-2.5 text-white">
+          <label id="txt-end-time" class="block text-zinc-400 mb-1">Край на деня</label>
+          <input type="time" id="set-end-time" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
         </div>
         <div>
-          <label id="txt-service-dur" class="block text-zinc-400 mb-1">Подстригване (мин)</label>
-          <input type="number" id="set-service-duration" class="w-full bg-black border border-zinc-800 rounded-xl p-2.5 text-white">
+          <label id="txt-service-dur" class="block text-zinc-400 mb-1">Подстригване (минути)</label>
+          <input type="number" id="set-service-duration" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
         </div>
         <div>
-          <label id="txt-clean-dur" class="block text-zinc-400 mb-1">Дезинфекция (мин)</label>
-          <input type="number" id="set-clean-duration" class="w-full bg-black border border-zinc-800 rounded-xl p-2.5 text-white">
+          <label id="txt-clean-dur" class="block text-zinc-400 mb-1">Дезинфекция (минути)</label>
+          <input type="number" id="set-clean-duration" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
+        </div>
+        <div>
+          <label id="txt-break-start" class="block text-zinc-400 mb-1">Почивка от</label>
+          <input type="time" id="set-break-start" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
+        </div>
+        <div>
+          <label id="txt-break-end" class="block text-zinc-400 mb-1">Почивка до</label>
+          <input type="time" id="set-break-end" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" />
         </div>
       </div>
+    </div>
 
-      <h2 id="txt-sunday-title" class="text-sm font-extrabold text-white pt-2 border-t border-zinc-800 flex items-center gap-2">
-        <i data-lucide="sun" class="w-4 h-4 text-amber-400"></i> График (Неделя)
+    <!-- Настройки за Неделя -->
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4 border-l-4 border-l-emerald-500">
+      <h2 id="txt-sunday-title" class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
+        <i data-lucide="sun" class="w-4 h-4 text-emerald-400"></i> Специален график за Неделя
       </h2>
-      <div class="grid grid-cols-2 gap-3 text-xs">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
         <div>
-          <label id="txt-sun-start" class="block text-zinc-400 mb-1">Начало (Нед)</label>
-          <input type="time" id="set-sun-start" class="w-full bg-black border border-zinc-800 rounded-xl p-2.5 text-white">
+          <label id="txt-sun-start" class="block text-zinc-400 mb-1">Начало (Неделя)</label>
+          <input type="time" id="set-sun-start" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" value="09:00" />
         </div>
         <div>
-          <label id="txt-sun-end" class="block text-zinc-400 mb-1">Край (Нед)</label>
-          <input type="time" id="set-sun-end" class="w-full bg-black border border-zinc-800 rounded-xl p-2.5 text-white">
+          <label id="txt-sun-end" class="block text-zinc-400 mb-1">Край (Неделя)</label>
+          <input type="time" id="set-sun-end" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" value="14:00" />
         </div>
         <div>
-          <label id="txt-sun-service" class="block text-zinc-400 mb-1">Подстригване (мин)</label>
-          <input type="number" id="set-sun-service" class="w-full bg-black border border-zinc-800 rounded-xl p-2.5 text-white">
+          <label id="txt-sun-service" class="block text-zinc-400 mb-1">Подстригване (минути)</label>
+          <input type="number" id="set-sun-service" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" value="60" />
         </div>
         <div>
-          <label id="txt-sun-clean" class="block text-zinc-400 mb-1">Дезинфекция (мин)</label>
-          <input type="number" id="set-sun-clean" class="w-full bg-black border border-zinc-800 rounded-xl p-2.5 text-white">
+          <label id="txt-sun-clean" class="block text-zinc-400 mb-1">Дезинфекция (минути)</label>
+          <input type="number" id="set-sun-clean" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" value="5" />
         </div>
       </div>
+    </div>
 
-      <button id="txt-save-btn" onclick="saveScheduleSettings()" class="w-full bg-white text-black font-extrabold py-3 rounded-xl text-xs hover:bg-zinc-200">
-        Запази настройките
-      </button>
-    </section>
+    <!-- Бутон за запазване на всички настройки -->
+    <button onclick="saveScheduleSettings()" id="txt-save-btn" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-3 rounded-xl transition text-sm shadow-lg">
+      Запази всички настройки
+    </button>
 
-    <!-- Days Off -->
-    <section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
-      <h2 id="txt-days-off-title" class="text-sm font-extrabold text-white flex items-center gap-2">
-        <i data-lucide="calendar-x" class="w-4 h-4 text-red-400"></i> Почивни дни
+    <!-- Почивни дни -->
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
+      <h2 id="txt-days-off-title" class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
+        <i data-lucide="calendar-off" class="w-4 h-4 text-zinc-400"></i> Почивни дни (Избор кога не работиш)
       </h2>
       <div class="flex gap-2">
-        <input type="date" id="day-off-input" class="bg-black border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white flex-1">
-        <button id="txt-add-off-btn" onclick="addDayOff()" class="bg-white text-black font-bold px-4 py-2 rounded-xl text-xs hover:bg-zinc-200">
-          Добави
+        <input type="date" id="day-off-input" onclick="this.showPicker && this.showPicker()" class="bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-white cursor-pointer [&::-webkit-calendar-picker-indicator]:invert" />
+        <button onclick="addDayOff()" id="txt-add-off-btn" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-4 py-2.5 rounded-xl text-xs transition">
+          Маркирай като почивен ден
         </button>
       </div>
       <div id="days-off-list" class="flex flex-wrap gap-2 pt-2"></div>
-    </section>
+    </div>
 
-    <!-- Manual Booking -->
-    <section class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
-      <h2 id="txt-manual-title" class="text-sm font-extrabold text-white flex items-center gap-2">
-        <i data-lucide="user-plus" class="w-4 h-4 text-blue-400"></i> Ръчно добавяне на час
+    <!-- Ръчно добавяне на час -->
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
+      <h2 id="txt-manual-title" class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
+        <i data-lucide="user-plus" class="w-4 h-4 text-emerald-400"></i> Ръчно добавяне на час
       </h2>
-      <div class="grid grid-cols-2 gap-3 text-xs">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
         <div>
-          <label id="txt-manual-name" class="block text-zinc-400 mb-1">Име</label>
-          <input type="text" id="manual-client-name" placeholder="Име на клиент" class="w-full bg-black border border-zinc-800 rounded-xl p-2.5 text-white">
+          <label id="txt-manual-name" class="block text-zinc-400 mb-1">Име на клиента</label>
+          <input type="text" id="manual-client-name" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" placeholder="Иван Иванов" />
         </div>
         <div>
           <label id="txt-manual-phone" class="block text-zinc-400 mb-1">Телефон</label>
-          <input type="tel" id="manual-client-phone" placeholder="089XXXXXXX" class="w-full bg-black border border-zinc-800 rounded-xl p-2.5 text-white">
+          <input type="text" id="manual-client-phone" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white" placeholder="089xxxxxxx" />
         </div>
-        <div class="col-span-2">
+        <div>
           <label id="txt-manual-date" class="block text-zinc-400 mb-1">Дата</label>
-          <input type="date" id="manual-date" class="w-full bg-black border border-zinc-800 rounded-xl p-2.5 text-white">
+          <input type="date" id="manual-date" onchange="updateManualAvailableSlots()" onclick="this.showPicker && this.showPicker()" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white cursor-pointer [&::-webkit-calendar-picker-indicator]:invert" />
+        </div>
+        <div>
+          <label id="txt-manual-time" class="block text-zinc-400 mb-1">Свободен час</label>
+          <select id="manual-time-select" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white">
+            <option value="">Първо изберете дата...</option>
+          </select>
         </div>
       </div>
-      <button id="txt-manual-btn" onclick="manuallyAddBooking()" class="w-full bg-white text-black font-extrabold py-3 rounded-xl text-xs hover:bg-zinc-200">
-        Запиши
+      <div>
+        <label id="txt-manual-email" class="block text-zinc-400 mb-1 text-xs">Имейл (по желание)</label>
+        <input type="email" id="manual-client-email" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white text-xs" placeholder="client@email.com" />
+      </div>
+      <button onclick="manuallyAddBooking()" id="txt-manual-btn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-bold py-2.5 rounded-xl transition text-xs">
+        Запиши час ръчно
       </button>
-    </section>
+    </div>
+
+    <!-- Активни запазени часове -->
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
+      <div class="flex justify-between items-center">
+        <h2 id="txt-active-bookings-title" class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
+          <i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i> Активни запазени часове
+        </h2>
+        <span id="active-count" class="text-xs font-bold bg-zinc-800 px-2.5 py-1 rounded-lg text-emerald-400">0</span>
+      </div>
+      <div id="active-bookings-list" class="divide-y divide-zinc-800/60 space-y-2">
+        <p id="txt-loading-active" class="text-xs text-zinc-500 text-center py-4">Зареждане в реално време...</p>
+      </div>
+    </div>
+
+    <!-- История и статистика по клиенти -->
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
+      <h2 id="txt-client-stats-title" class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
+        <i data-lucide="users" class="w-4 h-4 text-zinc-400"></i> История и статистика по клиенти
+      </h2>
+      <div id="client-stats-list" class="divide-y divide-zinc-800/60 space-y-2">
+        <p id="txt-loading-stats" class="text-xs text-zinc-500 text-center py-4">Зареждане на статистика...</p>
+      </div>
+    </div>
 
   </main>
 
@@ -158,178 +186,515 @@
       projectId: "sgforge-barber-studio",
       storageBucket: "sgforge-barber-studio.firebasestorage.app",
       messagingSenderId: "207826077800",
-      appId: "1:207826077800:web:6e776663a44a20f8ee0cb5"
+      appId: "1:207826077800:web:6e776663a44a20f8ee0cb5",
+      measurementId: "G-8FNDXQC5VW"
     };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
     const ADMIN_SECRET = "1234";
-    let globalBookings = [];
+    let globalItems = [];
+    let currentSettings = {
+      startTime: "09:00",
+      endTime: "19:00",
+      serviceDuration: 30,
+      cleanDuration: 15,
+      breakStart: "13:00",
+      breakEnd: "14:00",
+      sunStartTime: "09:00",
+      sunEndTime: "14:00",
+      sunServiceDuration: 60,
+      sunCleanDuration: 5
+    };
     let currentDaysOff = [];
 
     const translations = {
       bg: {
-        pageTitle: "SG Forge - Административен Панел", loginTitle: "Административен достъп",
-        loginDesc: "Въведете секретния код:", loginBtn: "Вход", subtitle: "Админ Панел", logout: "Изход",
-        langBtn: "ES 🇪🇸", settingsTitle: "График (Пон - Съб)", sundayTitle: "График (Неделя)",
-        sunStart: "Начало (Нед)", sunEnd: "Край (Нед)", sunService: "Подстригване (мин)", sunClean: "Дезинфекция (мин)",
-        startTime: "Начало", endTime: "Край", serviceDuration: "Подстригване (мин)", cleanDuration: "Дезинфекция (мин)",
-        saveBtn: "Запази настройките", daysOffTitle: "Почивни дни", addOffBtn: "Добави",
-        manualTitle: "Ръчно добавяне на час", manualName: "Име", manualPhone: "Телефон", manualDate: "Дата",
-        manualBtn: "Запиши", activeBookingsTitle: "Активни часове", alertSaved: "Успешно запазено!"
+        pageTitle: "SG Forge - Административен Панел",
+        loginTitle: "Административен достъп",
+        loginDesc: "Въведете секретния код за управление:",
+        loginBtn: "Вход в панела",
+        subtitle: "Административен Панел",
+        logout: "Изход",
+        langBtn: "ES 🇪🇸",
+        settingsTitle: "Стандартен график (Пон - Съб)",
+        sundayTitle: "Специален график за Неделя",
+        sunStart: "Начало (Неделя)",
+        sunEnd: "Край (Неделя)",
+        sunService: "Подстригване (минути)",
+        sunClean: "Дезинфекция (минути)",
+        startTime: "Начало на деня",
+        endTime: "Край на деня",
+        serviceDuration: "Подстригване (минути)",
+        cleanDuration: "Дезинфекция (минути)",
+        breakStart: "Почивка от",
+        breakEnd: "Почивка до",
+        saveBtn: "Запази всички настройки",
+        daysOffTitle: "Почивни дни (Избор кога не работиш)",
+        addOffBtn: "Маркирай като почивен ден",
+        manualTitle: "Ръчно добавяне на час",
+        manualName: "Име на клиента",
+        manualPhone: "Телефон",
+        manualDate: "Дата",
+        manualTime: "Свободен час",
+        manualEmail: "Имейл (по желание)",
+        manualBtn: "Запиши час ръчно",
+        selectDateFirst: "Първо изберете дата...",
+        noSlots: "Няма свободни часове за тази дата",
+        activeBookingsTitle: "Активни запазени часове",
+        clientStatsTitle: "История и статистика по клиенти",
+        loadingActive: "Зареждане в реално време...",
+        loadingStats: "Зареждане на статистика...",
+        noActive: "Няма активни резервации в момента.",
+        noStats: "Все още няма история за клиенти.",
+        noDaysOff: "Няма зададени почивни дни.",
+        attendedBtn: "Яви се",
+        missedBtn: "Не се яви",
+        attendedStat: "Явил се",
+        missedStat: "Не се яви",
+        alertWrongCode: "Грешен код!",
+        alertSaved: "Настройките бяха обновени успешно!",
+        alertSelectDate: "Изберете дата от календара!",
+        alertFillManual: "Моля, попълнете име, телефон, дата и час!",
+        alertBookingAdded: "Часът е добавен успешно и вече е отбелязан като зает!"
       },
       es: {
-        pageTitle: "SG Forge - Panel", loginTitle: "Acceso Admin",
-        loginDesc: "Código secreto:", loginBtn: "Entrar", subtitle: "Panel Admin", logout: "Salir",
-        langBtn: "BG 🇧🇬", settingsTitle: "Horario (Lun - Sáb)", sundayTitle: "Horario (Dom)",
-        sunStart: "Inicio (Dom)", sunEnd: "Fin (Dom)", sunService: "Corte (min)", sunClean: "Limpieza (min)",
-        startTime: "Inicio", endTime: "Fin", serviceDuration: "Corte (min)", cleanDuration: "Limpieza (min)",
-        saveBtn: "Guardar ajustes", daysOffTitle: "Días libres", addOffBtn: "Añadir",
-        manualTitle: "Añadir manual", manualName: "Nombre", manualPhone: "Teléfono", manualDate: "Fecha",
-        manualBtn: "Guardar", activeBookingsTitle: "Citas activas", alertSaved: "¡Guardado con éxito!"
+        pageTitle: "SG Forge - Panel Administrativo",
+        loginTitle: "Acceso Administrativo",
+        loginDesc: "Ingrese el código secreto de gestión:",
+        loginBtn: "Entrar al panel",
+        subtitle: "Panel Administrativo",
+        logout: "Salir",
+        langBtn: "BG 🇧🇬",
+        settingsTitle: "Horario estándar (Lun - Sáb)",
+        sundayTitle: "Horario especial para Domingo",
+        sunStart: "Inicio (Domingo)",
+        sunEnd: "Fin (Domingo)",
+        sunService: "Corte (minutos)",
+        sunClean: "Limpieza (minutos)",
+        startTime: "Inicio del día",
+        endTime: "Fin del día",
+        serviceDuration: "Corte (minutos)",
+        cleanDuration: "Limpieza (minutos)",
+        breakStart: "Descanso de",
+        breakEnd: "Descanso hasta",
+        saveBtn: "Guardar todas las configuraciones",
+        daysOffTitle: "Días libres (Selecciona cuándo no trabajas)",
+        addOffBtn: "Marcar como día libre",
+        manualTitle: "Añadir cita manualmente",
+        manualName: "Nombre del cliente",
+        manualPhone: "Teléfono",
+        manualDate: "Fecha",
+        manualTime: "Hora disponible",
+        manualEmail: "Correo electrónico (opcional)",
+        manualBtn: "Guardar cita manualmente",
+        selectDateFirst: "Seleccione una fecha primero...",
+        noSlots: "No hay horarios disponibles para esta fecha",
+        activeBookingsTitle: "Reservas activas",
+        clientStatsTitle: "Historial y estadísticas de clientes",
+        loadingActive: "Cargando en tiempo real...",
+        loadingStats: "Cargando estadísticas...",
+        noActive: "No hay reservas activas en este momento.",
+        noStats: "Aún no hay historial de clientes.",
+        noDaysOff: "No hay días libres establecidos.",
+        attendedBtn: "Asistió",
+        missedBtn: "No asistió",
+        attendedStat: "Asistió",
+        missedStat: "No asistió",
+        alertWrongCode: "¡Código incorrecto!",
+        alertSaved: "¡Las configuraciones se actualizaron con éxito!",
+        alertSelectDate: "¡Selecciona una fecha del calendario!",
+        alertFillManual: "¡Por favor complete el nombre, teléfono, fecha y hora!",
+        alertBookingAdded: "¡Cita añadida con éxito y marcada como ocupada!"
       }
     };
 
-    let currentLang = 'bg';
+    let currentLang = localStorage.getItem('sg_admin_lang') || 'bg';
 
     function toggleLanguage() {
       currentLang = currentLang === 'bg' ? 'es' : 'bg';
+      localStorage.setItem('sg_admin_lang', currentLang);
       applyTranslations();
+      loadDaysOff();
+      renderBookingsAndStats();
+      updateManualAvailableSlots();
     }
 
     function applyTranslations() {
       const t = translations[currentLang];
       document.getElementById('page-title').innerText = t.pageTitle;
       document.getElementById('txt-login-title').innerText = t.loginTitle;
+      document.getElementById('txt-login-desc').innerText = t.loginDesc;
       document.getElementById('txt-login-btn').innerText = t.loginBtn;
       document.getElementById('txt-subtitle').innerText = t.subtitle;
       document.getElementById('txt-logout').innerText = t.logout;
       document.getElementById('lang-btn-text').innerText = t.langBtn;
+      
+      document.getElementById('txt-settings-title').innerHTML = `<i data-lucide="settings" class="w-4 h-4 text-zinc-400"></i> ${t.settingsTitle}`;
+      document.getElementById('txt-start-time').innerText = t.startTime;
+      document.getElementById('txt-end-time').innerText = t.endTime;
+      document.getElementById('txt-service-dur').innerText = t.serviceDuration;
+      document.getElementById('txt-clean-dur').innerText = t.cleanDuration;
+      document.getElementById('txt-break-start').innerText = t.breakStart;
+      document.getElementById('txt-break-end').innerText = t.breakEnd;
+      
+      document.getElementById('txt-sunday-title').innerHTML = `<i data-lucide="sun" class="w-4 h-4 text-emerald-400"></i> ${t.sundayTitle}`;
+      document.getElementById('txt-sun-start').innerText = t.sunStart;
+      document.getElementById('txt-sun-end').innerText = t.sunEnd;
+      document.getElementById('txt-sun-service').innerText = t.sunService;
+      document.getElementById('txt-sun-clean').innerText = t.sunClean;
+
       document.getElementById('txt-save-btn').innerText = t.saveBtn;
+      document.getElementById('txt-days-off-title').innerHTML = `<i data-lucide="calendar-off" class="w-4 h-4 text-zinc-400"></i> ${t.daysOffTitle}`;
       document.getElementById('txt-add-off-btn').innerText = t.addOffBtn;
+      document.getElementById('txt-manual-title').innerHTML = `<i data-lucide="user-plus" class="w-4 h-4 text-emerald-400"></i> ${t.manualTitle}`;
+      document.getElementById('txt-manual-name').innerText = t.manualName;
+      document.getElementById('txt-manual-phone').innerText = t.manualPhone;
+      document.getElementById('txt-manual-date').innerText = t.manualDate;
+      document.getElementById('txt-manual-time').innerText = t.manualTime;
+      document.getElementById('txt-manual-email').innerText = t.manualEmail;
       document.getElementById('txt-manual-btn').innerText = t.manualBtn;
+      document.getElementById('txt-active-bookings-title').innerHTML = `<i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i> ${t.activeBookingsTitle}`;
+      document.getElementById('txt-client-stats-title').innerHTML = `<i data-lucide="users" class="w-4 h-4 text-zinc-400"></i> ${t.clientStatsTitle}`;
+
+      lucide.createIcons();
     }
+
+    window.onload = () => {
+      applyTranslations();
+      if (sessionStorage.getItem('sg_admin_logged') === 'true') {
+        document.getElementById('admin-login-modal').classList.add('hidden');
+        initAdminPanel();
+      }
+    };
 
     function checkAdminPassword() {
-      const pass = document.getElementById('admin-pass-input').value;
-      if (pass === ADMIN_SECRET) {
+      const val = document.getElementById('admin-pass-input').value.trim();
+      const t = translations[currentLang];
+      if (val === ADMIN_SECRET) {
+        sessionStorage.setItem('sg_admin_logged', 'true');
         document.getElementById('admin-login-modal').classList.add('hidden');
-        loadData();
+        initAdminPanel();
       } else {
-        alert("Грешна парола!");
+        alert(t.alertWrongCode);
       }
     }
-    function adminLogout() { location.reload(); }
 
-    function loadData() {
-      db.collection('settings').doc('schedule').onSnapshot(doc => {
-        if(doc.exists) {
+    function adminLogout() {
+      sessionStorage.removeItem('sg_admin_logged');
+      location.reload();
+    }
+
+    function initAdminPanel() {
+      loadSettings();
+      loadDaysOff();
+      listenToRealtimeBookingsAndStats();
+    }
+
+    function listenToRealtimeBookingsAndStats() {
+      db.collection('bookings').orderBy('date', 'asc').onSnapshot(snapshot => {
+        globalItems = [];
+        snapshot.forEach(doc => {
+          globalItems.push({ id: doc.id, ...doc.data() });
+        });
+        renderBookingsAndStats();
+        updateManualAvailableSlots();
+      });
+    }
+
+    function renderBookingsAndStats() {
+      const t = translations[currentLang];
+      const activeItems = globalItems.filter(item => !item.status || item.status === 'pending');
+      document.getElementById('active-count').innerText = activeItems.length;
+      
+      const activeContainer = document.getElementById('active-bookings-list');
+      activeContainer.innerHTML = '';
+
+      if (activeItems.length === 0) {
+        activeContainer.innerHTML = `<p class="text-xs text-zinc-500 text-center py-4">${t.noActive}</p>`;
+      } else {
+        activeItems.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'pt-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs';
+          div.innerHTML = `
+            <div>
+              <p class="font-bold text-white text-sm">${item.date} в <span class="text-emerald-400">${item.time}</span></p>
+              <p class="text-zinc-300 font-semibold">${item.clientName} <span class="text-zinc-500 font-normal">(${item.clientPhone})</span></p>
+              <p class="text-[10px] text-zinc-500">Имейл: ${item.clientEmail || 'Няма'}</p>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+              <button onclick="updateBookingStatus('${item.id}', 'attended')" class="flex-1 sm:flex-none bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 font-bold px-3 py-1.5 rounded-lg transition">
+                ${t.attendedBtn}
+              </button>
+              <button onclick="updateBookingStatus('${item.id}', 'missed')" class="flex-1 sm:flex-none bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-3 py-1.5 rounded-lg transition">
+                ${t.missedBtn}
+              </button>
+            </div>
+          `;
+          activeContainer.appendChild(div);
+        });
+      }
+
+      const statsContainer = document.getElementById('client-stats-list');
+      statsContainer.innerHTML = '';
+
+      let clientMap = {};
+      globalItems.forEach(item => {
+        if (!item.clientName) return;
+        const key = item.clientName.trim().toUpperCase();
+        if (!clientMap[key]) {
+          clientMap[key] = { name: item.clientName, phone: item.clientPhone || '', attended: 0, missed: 0 };
+        }
+        if (item.status === 'attended') clientMap[key].attended++;
+        if (item.status === 'missed') clientMap[key].missed++;
+      });
+
+      const clientsArr = Object.values(clientMap);
+      if (clientsArr.length === 0) {
+        statsContainer.innerHTML = `<p class="text-xs text-zinc-500 text-center py-4">${t.noStats}</p>`;
+      } else {
+        clientsArr.forEach(c => {
+          const div = document.createElement('div');
+          div.className = 'pt-3 flex justify-between items-center text-xs';
+          div.innerHTML = `
+            <div>
+              <p class="font-bold text-white text-sm">${c.name} <span class="text-zinc-500 font-normal">(${c.phone})</span></p>
+            </div>
+            <div class="flex items-center gap-2 font-bold">
+              <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg">${t.attendedStat}: ${c.attended}</span>
+              <span class="bg-red-500/10 text-red-400 border border-red-500/20 px-2.5 py-1 rounded-lg">${t.missedStat}: ${c.missed}</span>
+            </div>
+          `;
+          statsContainer.appendChild(div);
+        });
+      }
+      lucide.createIcons();
+    }
+
+    function updateBookingStatus(id, status) {
+      db.collection('bookings').doc(id).update({ status: status }).catch(err => alert('Грешка: ' + err.message));
+    }
+
+    function updateManualAvailableSlots() {
+      const dateVal = document.getElementById('manual-date').value;
+      const selectElem = document.getElementById('manual-time-select');
+      const t = translations[currentLang];
+
+      selectElem.innerHTML = '';
+
+      if (!dateVal) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.innerText = t.selectDateFirst;
+        selectElem.appendChild(opt);
+        return;
+      }
+
+      if (currentDaysOff.includes(dateVal)) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.innerText = currentLang === 'bg' ? 'Този ден е почивен!' : '¡Este día es libre!';
+        selectElem.appendChild(opt);
+        return;
+      }
+
+      // Проверка дали датата е Неделя (0)
+      const selectedDateObj = new Date(dateVal);
+      const isSunday = selectedDateObj.getDay() === 0;
+
+      // Динамично избиране на променливите според деня
+      let activeStartTime = isSunday ? (currentSettings.sunStartTime || "09:00") : (currentSettings.startTime || "09:00");
+      let activeEndTime = isSunday ? (currentSettings.sunEndTime || "14:00") : (currentSettings.endTime || "19:00");
+      let activeServiceDur = isSunday ? (Number(currentSettings.sunServiceDuration) || 60) : (Number(currentSettings.serviceDuration) || 30);
+      let activeCleanDur = isSunday ? (Number(currentSettings.sunCleanDuration) || 5) : (Number(currentSettings.cleanDuration) || 15);
+      
+      // Обедна почивка само за нормални дни
+      let activeBreakStart = isSunday ? null : currentSettings.breakStart;
+      let activeBreakEnd = isSunday ? null : currentSettings.breakEnd;
+
+      const startMin = timeToMins(activeStartTime);
+      const endMin = timeToMins(activeEndTime);
+      const slotStep = activeServiceDur + activeCleanDur;
+
+      const breakStartMin = activeBreakStart ? timeToMins(activeBreakStart) : null;
+      const breakEndMin = activeBreakEnd ? timeToMins(activeBreakEnd) : null;
+
+      const bookedTimes = globalItems
+        .filter(item => item.date === dateVal && (!item.status || item.status === 'pending' || item.status === 'attended'))
+        .map(item => item.time);
+
+      let generatedSlots = [];
+      for (let m = startMin; m + activeServiceDur <= endMin; m += slotStep) {
+        const slotTimeStr = minsToTime(m);
+
+        if (breakStartMin !== null && breakEndMin !== null) {
+          if (m < breakEndMin && (m + activeServiceDur) > breakStartMin) {
+            continue;
+          }
+        }
+
+        if (!bookedTimes.includes(slotTimeStr)) {
+          generatedSlots.push(slotTimeStr);
+        }
+      }
+
+      if (generatedSlots.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.innerText = t.noSlots;
+        selectElem.appendChild(opt);
+      } else {
+        generatedSlots.forEach(slot => {
+          const opt = document.createElement('option');
+          opt.value = slot;
+          opt.innerText = slot;
+          selectElem.appendChild(opt);
+        });
+      }
+    }
+
+    function timeToMins(timeStr) {
+      if (!timeStr) return 0;
+      const [h, m] = timeStr.split(':').map(Number);
+      return h * 60 + m;
+    }
+
+    function minsToTime(mins) {
+      const h = Math.floor(mins / 60).toString().padStart(2, '0');
+      const m = (mins % 60).toString().padStart(2, '0');
+      return `${h}:${m}`;
+    }
+
+    function manuallyAddBooking() {
+      const clientName = document.getElementById('manual-client-name').value.trim();
+      const clientPhone = document.getElementById('manual-client-phone').value.trim();
+      const date = document.getElementById('manual-date').value;
+      const time = document.getElementById('manual-time-select').value;
+      const clientEmail = document.getElementById('manual-client-email').value.trim();
+      const t = translations[currentLang];
+
+      if (!clientName || !clientPhone || !date || !time) {
+        alert(t.alertFillManual);
+        return;
+      }
+
+      db.collection('bookings').add({
+        clientName,
+        clientPhone,
+        date,
+        time,
+        clientEmail,
+        status: 'pending',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        alert(t.alertBookingAdded);
+        document.getElementById('manual-client-name').value = '';
+        document.getElementById('manual-client-phone').value = '';
+        document.getElementById('manual-date').value = '';
+        document.getElementById('manual-time-select').innerHTML = `<option value="">${t.selectDateFirst}</option>`;
+        document.getElementById('manual-client-email').value = '';
+      }).catch(err => alert('Грешка: ' + err.message));
+    }
+
+    function loadSettings() {
+      db.collection('settings').doc('schedule').get().then(doc => {
+        if (doc.exists) {
           const data = doc.data();
-          document.getElementById('set-start-time').value = data.startTime || '10:00';
-          document.getElementById('set-end-time').value = data.endTime || '22:00';
-          document.getElementById('set-service-duration').value = data.serviceDuration || 60;
-          document.getElementById('set-clean-duration').value = data.cleanDuration || 5;
-          document.getElementById('set-sun-start').value = data.sunStartTime || '10:00';
+          currentSettings = data;
+          
+          document.getElementById('set-start-time').value = data.startTime || '09:00';
+          document.getElementById('set-end-time').value = data.endTime || '19:00';
+          document.getElementById('set-service-duration').value = data.serviceDuration || 30;
+          document.getElementById('set-clean-duration').value = data.cleanDuration || 15;
+          document.getElementById('set-break-start').value = data.breakStart || '13:00';
+          document.getElementById('set-break-end').value = data.breakEnd || '14:00';
+          
+          document.getElementById('set-sun-start').value = data.sunStartTime || '09:00';
           document.getElementById('set-sun-end').value = data.sunEndTime || '14:00';
           document.getElementById('set-sun-service').value = data.sunServiceDuration || 60;
           document.getElementById('set-sun-clean').value = data.sunCleanDuration || 5;
         }
-      });
-
-      db.collection('settings').doc('daysOff').onSnapshot(doc => {
-        if(doc.exists) {
-          currentDaysOff = doc.data().dates || [];
-          renderDaysOff();
-        }
-      });
-
-      db.collection('bookings').onSnapshot(snapshot => {
-        globalBookings = [];
-        snapshot.forEach(doc => globalBookings.push({ id: doc.id, ...doc.data() }));
-        renderBookings();
+        updateManualAvailableSlots();
       });
     }
 
     function saveScheduleSettings() {
-      const settings = {
-        startTime: document.getElementById('set-start-time').value,
-        endTime: document.getElementById('set-end-time').value,
-        serviceDuration: document.getElementById('set-service-duration').value,
-        cleanDuration: document.getElementById('set-clean-duration').value,
-        sunStartTime: document.getElementById('set-sun-start').value,
-        sunEndTime: document.getElementById('set-sun-end').value,
-        sunServiceDuration: document.getElementById('set-sun-service').value,
-        sunCleanDuration: document.getElementById('set-sun-clean').value
-      };
-      db.collection('settings').doc('schedule').set(settings).then(() => {
-        alert(translations[currentLang].alertSaved);
+      const startTime = document.getElementById('set-start-time').value;
+      const endTime = document.getElementById('set-end-time').value;
+      const serviceDuration = Number(document.getElementById('set-service-duration').value);
+      const cleanDuration = Number(document.getElementById('set-clean-duration').value);
+      const breakStart = document.getElementById('set-break-start').value;
+      const breakEnd = document.getElementById('set-break-end').value;
+
+      const sunStartTime = document.getElementById('set-sun-start').value;
+      const sunEndTime = document.getElementById('set-sun-end').value;
+      const sunServiceDuration = Number(document.getElementById('set-sun-service').value);
+      const sunCleanDuration = Number(document.getElementById('set-sun-clean').value);
+
+      const t = translations[currentLang];
+
+      db.collection('settings').doc('schedule').set({
+        startTime, endTime, serviceDuration, cleanDuration, breakStart, breakEnd,
+        sunStartTime, sunEndTime, sunServiceDuration, sunCleanDuration
+      }).then(() => {
+        currentSettings = { 
+          startTime, endTime, serviceDuration, cleanDuration, breakStart, breakEnd,
+          sunStartTime, sunEndTime, sunServiceDuration, sunCleanDuration
+        };
+        alert(t.alertSaved);
+        updateManualAvailableSlots();
+      }).catch(err => alert('Грешка: ' + err.message));
+    }
+
+    function loadDaysOff() {
+      db.collection('settings').doc('daysOff').get().then(doc => {
+        if (doc.exists && doc.data().dates) {
+          currentDaysOff = doc.data().dates;
+          renderDaysOffList();
+          updateManualAvailableSlots();
+        }
       });
     }
 
     function addDayOff() {
-      const date = document.getElementById('day-off-input').value;
-      if(!date) return alert('Изберете дата!');
-      if(!currentDaysOff.includes(date)) {
-        currentDaysOff.push(date);
-        db.collection('settings').doc('daysOff').set({ dates: currentDaysOff });
+      const dateVal = document.getElementById('day-off-input').value;
+      const t = translations[currentLang];
+      if (!dateVal) return alert(t.alertSelectDate);
+      if (!currentDaysOff.includes(dateVal)) {
+        currentDaysOff.push(dateVal);
+        db.collection('settings').doc('daysOff').set({ dates: currentDaysOff }).then(() => {
+          renderDaysOffList();
+          document.getElementById('day-off-input').value = '';
+          updateManualAvailableSlots();
+        });
       }
     }
 
-    function removeDayOff(date) {
-      currentDaysOff = currentDaysOff.filter(d => d !== date);
-      db.collection('settings').doc('daysOff').set({ dates: currentDaysOff });
-    }
-
-    function renderDaysOff() {
-      const list = document.getElementById('days-off-list');
-      list.innerHTML = currentDaysOff.map(d => 
-        `<span class="bg-red-500/20 text-red-400 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2">
-          ${d} <button onclick="removeDayOff('${d}')" class="hover:text-white">x</button>
-        </span>`
-      ).join('');
-    }
-
-    function renderBookings() {
-      const list = document.getElementById('active-bookings-list');
-      const active = globalBookings.filter(b => b.status === 'pending');
-      document.getElementById('active-count').innerText = active.length;
-      
-      if(active.length === 0) {
-        list.innerHTML = '<p class="text-xs text-zinc-500 py-4">Няма активни резервации.</p>';
-        return;
-      }
-      
-      list.innerHTML = active.map(b => `
-        <div class="py-3 flex justify-between items-center text-sm border-b border-zinc-800">
-          <div>
-            <p class="text-white font-bold">${b.date} / ${b.time}</p>
-            <p class="text-zinc-400 text-xs">${b.clientName} - ${b.clientPhone}</p>
-          </div>
-          <button onclick="db.collection('bookings').doc('${b.id}').update({status: 'cancelled'})" class="text-red-400 border border-red-500/30 px-3 py-1 rounded-lg text-xs hover:bg-red-500/10">Отмени</button>
-        </div>
-      `).join('');
-    }
-
-    function manuallyAddBooking() {
-      const name = document.getElementById('manual-client-name').value;
-      const phone = document.getElementById('manual-client-phone').value;
-      const date = document.getElementById('manual-date').value;
-      const time = prompt("Въведете час (напр. 15:00):"); 
-      
-      if(!name || !date || !time) return alert("Попълнете име, дата и час!");
-
-      db.collection("bookings").add({
-        userId: "admin-manual", clientName: name, clientPhone: phone,
-        date: date, time: time, status: 'pending', createdAt: new Date()
-      }).then(() => {
-        alert("Часът е добавен успешно!");
-        document.getElementById('manual-client-name').value = '';
-        document.getElementById('manual-client-phone').value = '';
+    function removeDayOff(dateStr) {
+      currentDaysOff = currentDaysOff.filter(d => d !== dateStr);
+      db.collection('settings').doc('daysOff').set({ dates: currentDaysOff }).then(() => {
+        renderDaysOffList();
+        updateManualAvailableSlots();
       });
     }
 
-    window.onload = applyTranslations;
+    function renderDaysOffList() {
+      const container = document.getElementById('days-off-list');
+      container.innerHTML = '';
+      const t = translations[currentLang];
+      if (currentDaysOff.length === 0) {
+        container.innerHTML = `<p class="text-xs text-zinc-500">${t.noDaysOff}</p>`;
+        return;
+      }
+      currentDaysOff.forEach(d => {
+        const span = document.createElement('span');
+        span.className = 'inline-flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs px-3 py-1.5 rounded-xl font-bold';
+        span.innerHTML = `${d} <button onclick="removeDayOff('${d}')" class="text-red-400 hover:text-red-300 ml-1">&times;</button>`;
+        container.appendChild(span);
+      });
+    }
+
     lucide.createIcons();
   </script>
 </body>
