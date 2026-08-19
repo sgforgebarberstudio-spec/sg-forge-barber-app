@@ -415,8 +415,8 @@
               </div>
               <div class="text-xs">
                 <p class="font-bold text-white/50 uppercase tracking-wider mb-0.5">РАБОТНО ВРЕМЕ</p>
-                <p class="font-semibold text-white">Вторник - Събота: 10:00 - 22:00</p>
-                <p class="font-semibold text-white">Неделя: 10:00 - 14:00</p>
+                <p id="display-work-hours-week" class="font-semibold text-white">Вторник - Събота: 10:00 - 22:00</p>
+                <p id="display-work-hours-sun" class="font-semibold text-white">Неделя: 10:00 - 14:00</p>
                 <p class="text-[11px] text-[#e1e1e1] font-bold mt-0.5">Понеделник: Почивен ден</p>
               </div>
             </div>
@@ -782,10 +782,20 @@
 
       let isOpen = false;
 
+      const [startH, startM] = (scheduleSettings.startTime || "10:00").split(':').map(Number);
+      const [endH, endM] = (scheduleSettings.endTime || "22:00").split(':').map(Number);
+      const startVal = startH + startM / 60;
+      const endVal = endH + endM / 60;
+
+      const [sunStartH, sunStartM] = (scheduleSettings.sunStartTime || "10:00").split(':').map(Number);
+      const [sunEndH, sunEndM] = (scheduleSettings.sunEndTime || "14:00").split(':').map(Number);
+      const sunStartVal = sunStartH + sunStartM / 60;
+      const sunEndVal = sunEndH + sunEndM / 60;
+
       if (day >= 2 && day <= 6) {
-        if (currentTime >= 10 && currentTime < 22) isOpen = true;
+        if (currentTime >= startVal && currentTime < endVal) isOpen = true;
       } else if (day === 0) {
-        if (currentTime >= 10 && currentTime < 14) isOpen = true;
+        if (currentTime >= sunStartVal && currentTime < sunEndVal) isOpen = true;
       }
 
       if (isOpen) {
@@ -975,18 +985,28 @@
     };
 
     function loadSettingsAndDaysOff() {
-      db.collection('settings').doc('schedule').get().then(doc => {
+      db.collection('settings').doc('schedule').onSnapshot(doc => {
         if (doc.exists) {
           scheduleSettings = { ...scheduleSettings, ...doc.data() };
+          
+          const weekEl = document.getElementById('display-work-hours-week');
+          const sunEl = document.getElementById('display-work-hours-sun');
+          if (weekEl) weekEl.innerText = `Вторник - Събота: ${scheduleSettings.startTime || '10:00'} - ${scheduleSettings.endTime || '22:00'}`;
+          if (sunEl) sunEl.innerText = `Неделя: ${scheduleSettings.sunStartTime || '10:00'} - ${scheduleSettings.sunEndTime || '14:00'}`;
+          
+          updateLiveStatus();
+          if (selectedDate) fetchTimeSlots();
         }
       });
 
-      db.collection('settings').doc('daysOff').get().then(doc => {
+      db.collection('settings').doc('daysOff').onSnapshot(doc => {
         if (doc.exists && doc.data().dates) {
           daysOffList = doc.data().dates;
+        } else {
+          daysOffList = [];
         }
         renderCalendar();
-      }).catch(() => {
+      }, err => {
         renderCalendar();
       });
     }
@@ -1151,11 +1171,26 @@
       let currentMin = h * 60 + m;
       const endMin = endH * 60 + endM;
 
+      let bStartMin = -1, bEndMin = -1;
+      if (!isSunday && scheduleSettings.breakStart && scheduleSettings.breakEnd && scheduleSettings.breakStart !== "00:00" && scheduleSettings.breakEnd !== "00:00") {
+        let [bSh, bSm] = scheduleSettings.breakStart.split(':').map(Number);
+        let [bEh, bEm] = scheduleSettings.breakEnd.split(':').map(Number);
+        bStartMin = bSh * 60 + bSm;
+        bEndMin = bEh * 60 + bEm;
+      }
+
       const slots = [];
       while (currentMin + serviceDuration <= endMin) {
-        const slotH = String(Math.floor(currentMin / 60)).padStart(2, '0');
-        const slotM = String(currentMin % 60).padStart(2, '0');
-        slots.push(`${slotH}:${slotM}`);
+        const slotEndMin = currentMin + serviceDuration;
+        
+        const overlapsBreak = (bStartMin !== -1 && bEndMin !== -1) && 
+                              (currentMin < bEndMin && slotEndMin > bStartMin);
+
+        if (!overlapsBreak) {
+          const slotH = String(Math.floor(currentMin / 60)).padStart(2, '0');
+          const slotM = String(currentMin % 60).padStart(2, '0');
+          slots.push(`${slotH}:${slotM}`);
+        }
         currentMin += totalSlotTime;
       }
       return slots;
