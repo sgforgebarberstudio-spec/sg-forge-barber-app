@@ -251,6 +251,295 @@
     .success-pole-pop {
       animation: successPop 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
+
+    /* 🎴 ЛОЯЛНА КАРТА — Apple keynote style, monochrome, single face */
+    .apple-card-scene {
+      perspective: 1400px;
+      width: 100%;
+    }
+    .apple-card {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1.586 / 1;
+      border-radius: 20px;
+      overflow: hidden;
+      padding: 20px 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: background 0.4s ease;
+      /* Space Black (по подразбиране) */
+      --card-fg: #ffffff;
+      --card-fg-dim: rgba(255,255,255,0.35);
+      --card-fg-dimmer: rgba(255,255,255,0.22);
+      --card-divider: rgba(255,255,255,0.1);
+      --card-dot-glow: rgba(255,255,255,0.45);
+      background:
+        radial-gradient(120% 140% at 12% 0%, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0) 45%),
+        linear-gradient(165deg, #1c1c1e 0%, #0a0a0a 65%, #000000 100%);
+      box-shadow:
+        0 30px 60px -15px rgba(0,0,0,0.75),
+        0 10px 25px -8px rgba(0,0,0,0.5),
+        0 0 0 1px rgba(255,255,255,0.08) inset,
+        0 1px 0 rgba(255,255,255,0.12) inset;
+    }
+    .apple-card.style-silver {
+      --card-fg: #1c1c1e;
+      --card-fg-dim: rgba(28,28,30,0.5);
+      --card-fg-dimmer: rgba(28,28,30,0.32);
+      --card-divider: rgba(28,28,30,0.15);
+      --card-dot-glow: rgba(28,28,30,0.35);
+      background:
+        radial-gradient(120% 140% at 12% 0%, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0) 45%),
+        linear-gradient(165deg, #f4f4f6 0%, #dcdce1 55%, #c7c7cc 100%);
+      box-shadow:
+        0 30px 60px -15px rgba(0,0,0,0.35),
+        0 10px 25px -8px rgba(0,0,0,0.2),
+        0 0 0 1px rgba(0,0,0,0.06) inset,
+        0 1px 0 rgba(255,255,255,0.6) inset;
+    }
+    .apple-card.style-gold {
+      --card-fg: #3a2c1a;
+      --card-fg-dim: rgba(58,44,26,0.55);
+      --card-fg-dimmer: rgba(58,44,26,0.36);
+      --card-divider: rgba(58,44,26,0.18);
+      --card-dot-glow: rgba(58,44,26,0.35);
+      background:
+        radial-gradient(120% 140% at 12% 0%, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 45%),
+        linear-gradient(165deg, #f6e6c8 0%, #e0bd82 55%, #c79a5b 100%);
+      box-shadow:
+        0 30px 60px -15px rgba(0,0,0,0.4),
+        0 10px 25px -8px rgba(0,0,0,0.25),
+        0 0 0 1px rgba(0,0,0,0.06) inset,
+        0 1px 0 rgba(255,255,255,0.45) inset;
+    }
+    .apple-card-fg { color: var(--card-fg); }
+    .apple-card-fg-dim { color: var(--card-fg-dim); }
+    .apple-card-fg-dimmer { color: var(--card-fg-dimmer); }
+    .apple-card-divider { border-top: 1px solid var(--card-divider); }
+    .apple-card-shine {
+      position: absolute;
+      top: -60%;
+      left: -70%;
+      width: 55%;
+      height: 220%;
+      background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.35) 45%, rgba(255,255,255,0.08) 55%, transparent 100%);
+      transform: rotate(15deg);
+      pointer-events: none;
+      opacity: 0;
+      mix-blend-mode: overlay;
+    }
+    .apple-card-shine.play {
+      animation: appleShineSweep 1.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes appleShineSweep {
+      0% { left: -70%; opacity: 0; }
+      12% { opacity: 1; }
+      55% { opacity: 1; }
+      100% { left: 140%; opacity: 0; }
+    }
+    @keyframes appleCardPopIn {
+      0% { opacity: 0; transform: scale(0.85) translateY(26px) rotateX(8deg); }
+      100% { opacity: 1; transform: scale(1) translateY(0) rotateX(0deg); }
+    }
+    .apple-card-pop {
+      animation: appleCardPopIn 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      transform-style: preserve-3d;
+    }
+    .apple-stamp-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      border: 1.5px solid var(--card-fg-dimmer);
+      flex-shrink: 0;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .apple-stamp-dot.filled {
+      background: var(--card-fg);
+      border-color: var(--card-fg);
+      box-shadow: 0 0 8px var(--card-dot-glow);
+    }
+
+    /* 🎨 Style swatches (избор на визуален стил на картата) */
+    .loyalty-style-swatch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 8px;
+      border-radius: 14px;
+      border: 1.5px solid #262626;
+      background: #000000;
+      transition: border-color 0.2s ease, transform 0.15s ease;
+      cursor: pointer;
+    }
+    .loyalty-style-swatch.selected {
+      border-color: #ffffff;
+    }
+    .loyalty-style-swatch:active {
+      transform: scale(0.96);
+    }
+    .loyalty-style-preview {
+      width: 100%;
+      aspect-ratio: 1.586 / 1;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+    .loyalty-style-swatch span {
+      font-size: 8px;
+      color: rgba(255,255,255,0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+    .loyalty-style-preview.style-space-black {
+      background: linear-gradient(165deg, #1c1c1e 0%, #0a0a0a 65%, #000000 100%);
+    }
+    .loyalty-style-preview.style-silver {
+      background: linear-gradient(165deg, #f4f4f6 0%, #dcdce1 55%, #c7c7cc 100%);
+    }
+    .loyalty-style-preview.style-gold {
+      background: linear-gradient(165deg, #f6e6c8 0%, #e0bd82 55%, #c79a5b 100%);
+    }
+
+    /* ⭐ Карусел с отзиви */
+    .reviews-collapsible {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      padding-top: 0 !important;
+      transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, padding-top 0.4s ease;
+    }
+    .reviews-collapsible.is-open {
+      max-height: 360px;
+      opacity: 1;
+      padding-top: 16px !important;
+    }
+    @media (min-width: 640px) {
+      .reviews-collapsible.is-open { padding-top: 24px !important; }
+    }
+    #header-rating-chevron.is-open {
+      transform: rotate(180deg);
+    }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .review-card-clamp {
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    @keyframes reviewCardIn {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .review-card {
+      animation: reviewCardIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    }
+
+    /* 🎟️ Wallet-style bottom sheet */
+    @keyframes loyaltySheetIn {
+      0% { opacity: 0; transform: translateY(60px) scale(0.96); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .loyalty-sheet {
+      animation: loyaltySheetIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* 🍔 HAMBURGER МЕНЮ */
+    .hamburger-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: #000000;
+      border: 1px solid #262626;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease;
+      flex-shrink: 0;
+    }
+    .hamburger-btn:hover {
+      background: #141414;
+    }
+    .hamburger-line {
+      display: block;
+      width: 18px;
+      height: 2px;
+      border-radius: 2px;
+      background: #ffffff;
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease, width 0.25s ease;
+    }
+    .hamburger-btn.is-open .hamburger-line:nth-child(1) {
+      transform: translateY(7px) rotate(45deg);
+    }
+    .hamburger-btn.is-open .hamburger-line:nth-child(2) {
+      opacity: 0;
+      width: 0;
+    }
+    .hamburger-btn.is-open .hamburger-line:nth-child(3) {
+      transform: translateY(-7px) rotate(-45deg);
+    }
+
+    /* 📱 СТРАНИЧНО ПЛЪЗГАЩО СЕ МЕНЮ */
+    #side-menu-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 90;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+    #side-menu-backdrop.is-visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #side-menu-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: min(78vw, 320px);
+      background: linear-gradient(160deg, #0d0d0d, #000000 80%);
+      border-left: 1px solid #262626;
+      box-shadow: -20px 0 50px -12px rgba(0,0,0,0.7);
+      z-index: 95;
+      transform: translateX(100%);
+      transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      gap: 8px;
+    }
+    #side-menu-panel.is-open {
+      transform: translateX(0);
+    }
+    .side-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      text-align: left;
+      background: #000000;
+      border: 1px solid #262626;
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-weight: 700;
+      font-size: 13px;
+      color: #ffffff;
+      transition: background 0.2s ease, transform 0.15s ease;
+    }
+    .side-menu-item:active {
+      transform: scale(0.97);
+    }
+    .side-menu-item:hover {
+      background: #141414;
+    }
   </style>
 </head>
 <body class="bg-[#000000] text-white min-h-screen font-sans pb-12 overflow-x-hidden selection:bg-[#ffffff] selection:text-[#000000] relative">
@@ -298,10 +587,10 @@
   </div>
 
   <!-- Header -->
-  <header class="border-b border-[#262626] bg-[#000000]/90 backdrop-blur-md p-4 sticky top-0 z-50">
-    <div class="max-w-5xl mx-auto flex justify-between items-center relative z-10">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-gradient-to-br from-[#141414] to-[#000000] border border-[#262626] rounded-xl flex items-center justify-center shadow-md shadow-white/5">
+  <header class="border-b border-[#262626] bg-[#000000]/90 backdrop-blur-md px-3 py-3 sm:p-4 sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto flex justify-between items-center relative z-10 gap-2">
+      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-[#141414] to-[#000000] border border-[#262626] rounded-xl flex items-center justify-center shadow-md shadow-white/5 flex-shrink-0">
           <div class="barber-pole-wrapper">
             <div class="barber-pole-cap-top"></div>
             <div class="barber-pole-glass">
@@ -312,16 +601,63 @@
           </div>
         </div>
 
-        <div>
-          <h1 class="text-lg font-black uppercase text-white tracking-wider leading-none">SG FORGE</h1>
-          <p class="text-[10px] text-[#e1e1e1] font-bold tracking-wider uppercase mt-0.5">Barber Studio</p>
+        <div class="min-w-0">
+          <h1 class="text-sm sm:text-lg font-black uppercase text-white tracking-wider leading-none truncate">SG FORGE</h1>
+          <p class="text-[9px] sm:text-[10px] text-[#e1e1e1] font-bold tracking-wider uppercase mt-0.5 truncate">Barber Studio</p>
         </div>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        <button id="header-rating-btn" onclick="toggleReviewsSection()" class="flex items-center gap-1 text-[11px] font-bold bg-[#000000] hover:bg-[#141414] text-amber-400 border border-[#262626] rounded-xl px-2 sm:px-2.5 py-2 transition whitespace-nowrap">
+          <i data-lucide="star" class="w-3.5 h-3.5 fill-amber-400 text-amber-400 flex-shrink-0"></i>
+          <span id="header-rating-text">5.0</span>
+          <span id="header-rating-count" class="text-white/40 font-semibold">(0)</span>
+          <i data-lucide="chevron-down" id="header-rating-chevron" class="w-3 h-3 text-white/40 flex-shrink-0 transition-transform duration-300"></i>
+        </button>
         <div id="auth-header-container"></div>
       </div>
     </div>
   </header>
+
+  <!-- Странично плъзгащо се меню -->
+  <div id="side-menu-backdrop" onclick="closeSideMenu()"></div>
+  <div id="side-menu-panel">
+    <div class="flex justify-between items-center mb-2">
+      <span class="text-xs font-bold uppercase tracking-wider text-white/50">Меню</span>
+      <button onclick="closeSideMenu()" class="w-8 h-8 rounded-lg bg-[#000000] border border-[#262626] flex items-center justify-center text-white/70 hover:text-white transition">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <button onclick="closeSideMenu(); openLoyaltyCardModal();" class="side-menu-item">
+      <i data-lucide="credit-card" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i> Карта за лоялност
+    </button>
+    <button onclick="closeSideMenu(); openMyAppointmentsModal();" class="side-menu-item">
+      <i data-lucide="calendar" class="w-4 h-4 text-[#e1e1e1] flex-shrink-0"></i> Моите часове
+    </button>
+
+    <div class="flex-1"></div>
+
+    <button onclick="closeSideMenu(); logoutUser();" class="side-menu-item text-red-400 border-red-500/20">
+      <i data-lucide="log-out" class="w-4 h-4 text-red-400 flex-shrink-0"></i> Изход
+    </button>
+  </div>
+
+  <!-- Отзиви от клиенти — показват се при клик на звездите в хедъра -->
+  <section id="reviews-section" class="reviews-collapsible max-w-5xl mx-auto px-4 pt-4 sm:pt-6 relative z-10" style="scroll-margin-top: 88px;">
+    <div class="flex items-center justify-between mb-3 px-0.5">
+      <div class="flex items-center gap-2">
+        <i data-lucide="sparkles" class="w-4 h-4 text-white/70"></i>
+        <span class="text-xs font-bold uppercase tracking-wider text-white/70">Какво казват клиентите</span>
+      </div>
+      <div id="avg-rating-badge-top" class="flex items-center gap-1 text-[11px] font-extrabold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1 rounded-full whitespace-nowrap">
+        <i data-lucide="star" class="w-3 h-3 fill-amber-400 text-amber-400"></i> 5.0 · 0
+      </div>
+    </div>
+
+    <div id="reviews-carousel" class="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+      <p class="text-xs text-white/40 py-6">Зареждане на отзиви...</p>
+    </div>
+  </section>
 
   <!-- Main Content Grid -->
   <main class="max-w-5xl mx-auto p-4 mt-4 relative z-10">
@@ -449,27 +785,6 @@
 
         </div>
 
-        <!-- КАРТА 2: ОТЗИВИ И ОЦЕНКИ (СВЪРЗАНИ С FIREBASE) -->
-        <div class="bg-[#0d0d0d]/90 border border-[#262626] backdrop-blur-xl p-5 sm:p-6 rounded-2xl shadow-xl space-y-4">
-          <div class="flex items-center justify-between border-b border-[#262626] pb-3">
-            <div class="flex items-center gap-2">
-              <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
-              <span class="text-xs font-bold uppercase tracking-wider text-white">ОТЗИВИ ОТ КЛИЕНТИ</span>
-            </div>
-            <span id="avg-rating-badge" class="text-[11px] font-extrabold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-0.5 rounded-full">
-              5.0 ★
-            </span>
-          </div>
-
-          <div id="reviews-list" class="space-y-3 max-h-64 overflow-y-auto pr-1">
-            <p class="text-xs text-white/40 text-center py-3">Зареждане на отзиви...</p>
-          </div>
-
-          <button onclick="openReviewModal()" class="w-full bg-[#000000] hover:bg-[#141414] text-white border border-[#262626] py-3 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-md">
-            <i data-lucide="message-square-plus" class="w-4 h-4 text-[#e1e1e1]"></i> Напиши отзив
-          </button>
-        </div>
-
       </div>
 
     </div>
@@ -507,7 +822,7 @@
           <textarea id="review-comment" rows="3" placeholder="Сподели впечатленията си от обслужването..." class="w-full bg-[#000000] border border-[#262626] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-[#ffffff] transition placeholder:text-white/30 resize-none"></textarea>
         </div>
 
-        <button onclick="submitReview()" class="w-full bg-gradient-to-r from-[#ffffff] to-[#e1e1e1] hover:from-[#e1e1e1] hover:to-[#cccccc] text-[#000000] font-extrabold py-3 rounded-xl transition-all shadow-lg shadow-white/10 text-xs border border-white/20">
+        <button id="review-submit-btn" onclick="submitReview()" class="w-full bg-gradient-to-r from-[#ffffff] to-[#e1e1e1] hover:from-[#e1e1e1] hover:to-[#cccccc] text-[#000000] font-extrabold py-3 rounded-xl transition-all shadow-lg shadow-white/10 text-xs border border-white/20">
           Публикувай отзива
         </button>
       </div>
@@ -574,6 +889,23 @@
     </div>
   </div>
 
+  <!-- Модален прозорец за Награда от Лоялна Карта (5/5 печата) -->
+  <div id="loyalty-reward-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center hidden z-[125] p-4">
+    <div class="bg-[#0d0d0d] border border-emerald-500/30 p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl text-center animate-modal relative overflow-hidden">
+      <div id="loyalty-confetti" class="absolute inset-x-0 top-0 h-24 pointer-events-none"></div>
+
+      <div class="w-14 h-14 mx-auto mb-1 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-center success-pole-pop">
+        <i data-lucide="gift" class="w-7 h-7 text-emerald-400"></i>
+      </div>
+
+      <h3 class="text-md font-bold text-white uppercase tracking-wider">Поздравления! 🎉</h3>
+      <p class="text-xs text-white/70">Събра 5 печата на картата си за лоялност! Имаш право на <span class="text-emerald-400 font-bold">безплатна подстрижка</span>. Кажи на бръснаря при следващото си посещение.</p>
+      <button onclick="closeLoyaltyRewardModal()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-extrabold py-2.5 rounded-xl text-xs transition mt-2 shadow-lg shadow-emerald-500/20">
+        Страхотно!
+      </button>
+    </div>
+  </div>
+
   <!-- Модален прозорец Вход / Регистрация -->
   <div id="auth-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center hidden z-50 p-4">
     <div class="bg-[#0d0d0d] border border-[#262626] p-6 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl relative animate-modal">
@@ -606,6 +938,87 @@
 
       <div class="text-center pt-2">
         <button onclick="toggleAuthMode()" id="auth-toggle-link" class="text-[11px] text-white/70 hover:text-white underline">Нямате профил? Регистрирайте се</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модален прозорец Карта за лоялност (Apple Wallet style bottom sheet) -->
+  <div id="loyalty-card-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center hidden z-50">
+    <div id="loyalty-sheet" class="loyalty-sheet bg-[#0d0d0d] border border-[#262626] border-b-0 sm:border-b p-5 sm:p-6 rounded-t-3xl sm:rounded-2xl max-w-sm w-full space-y-4 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+      <div class="flex justify-center sm:hidden -mt-1 mb-1">
+        <div class="w-10 h-1.5 rounded-full bg-white/15"></div>
+      </div>
+
+      <div class="flex justify-between items-center pb-2 border-b border-[#262626]">
+        <h3 class="text-md font-bold text-white uppercase tracking-wider flex items-center gap-2">
+          <i data-lucide="credit-card" class="w-4 h-4 text-white/70"></i> Карта за лоялност
+        </h3>
+        <button onclick="closeLoyaltyCardModal()" class="text-xs bg-[#000000] hover:bg-[#141414] text-white py-1.5 px-3 rounded-lg border border-[#262626] transition">Затвори</button>
+      </div>
+
+      <!-- Изглед 1: Първоначално създаване на картата -->
+      <div id="loyalty-setup-view" class="space-y-4 hidden">
+        <p class="text-[11px] text-white/60 text-center">Направи своята персонална карта — събирай печати и получавай <span class="text-white font-bold">безплатна подстрижка</span> на всеки 5-ти път.</p>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-[11px] text-white/70 mb-1">Име и фамилия</label>
+            <input type="text" id="loyalty-setup-name" placeholder="Иван Иванов" class="w-full bg-[#000000] border border-[#262626] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-white transition placeholder:text-white/30" />
+          </div>
+          <div>
+            <label class="block text-[11px] text-white/70 mb-1">Телефонен номер</label>
+            <input type="tel" id="loyalty-setup-phone" placeholder="08XX XXX XXX" class="w-full bg-[#000000] border border-[#262626] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-white transition placeholder:text-white/30" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] text-white/70 mb-2">Избери стил на картата</label>
+          <div id="loyalty-setup-style-picker" class="grid grid-cols-3 gap-2.5"></div>
+        </div>
+
+        <button onclick="submitLoyaltyCardSetup()" class="w-full bg-white hover:bg-[#e1e1e1] text-black font-extrabold py-3 rounded-xl text-xs transition shadow-lg shadow-white/10 border border-white/20">
+          Създай картата
+        </button>
+      </div>
+
+      <!-- Изглед 2: Вече съществуваща карта -->
+      <div id="loyalty-card-view" class="space-y-4 hidden">
+        <p class="text-[11px] text-white/60 text-center">Събери 5 печата и получи <span class="text-white font-bold">безплатна подстрижка!</span></p>
+
+        <div class="apple-card-scene">
+          <div id="loyalty-card-inner" class="apple-card apple-card-pop style-space-black">
+            <div id="loyalty-shine" class="apple-card-shine"></div>
+
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-[11px] font-bold tracking-[0.28em] apple-card-fg uppercase leading-none">SG Forge</p>
+                <p class="text-[7px] tracking-[0.3em] apple-card-fg-dim uppercase mt-1">Barber Studio</p>
+              </div>
+              <p class="text-[7px] tracking-[0.22em] apple-card-fg-dimmer uppercase pt-0.5">Лоялна карта</p>
+            </div>
+
+            <div class="space-y-2.5">
+              <div class="flex items-end gap-2">
+                <span id="loyalty-hero-count" class="apple-card-fg leading-none" style="font-size:44px; font-weight:200; letter-spacing:-0.02em;">0</span>
+                <span class="apple-card-fg-dim text-sm font-light mb-1">/ 5 печата</span>
+              </div>
+              <div id="loyalty-stamps-grid" class="flex items-center gap-2"></div>
+            </div>
+
+            <div class="pt-2.5 apple-card-divider flex items-end justify-between gap-3">
+              <div>
+                <p class="text-[6.5px] uppercase tracking-[0.25em] apple-card-fg-dimmer mb-1">Код за бръснаря</p>
+                <p id="loyalty-code-display" class="text-lg font-light apple-card-fg tracking-[0.3em] leading-none">----</p>
+              </div>
+              <p id="loyalty-status-text" class="text-[9px] apple-card-fg-dim font-medium text-right leading-tight"></p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-[10px] text-white/40 text-center mb-2">Стил на картата</p>
+          <div id="loyalty-change-style-picker" class="grid grid-cols-3 gap-2.5"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -665,6 +1078,9 @@
     let daysOffList = [];
     let isRegisterMode = false;
     let confirmCallback = null;
+
+    let loyaltyUnsubscribe = null;
+    let loyaltyPrevStamps = null;
 
     function hapticTick(pattern = 10) {
       try {
@@ -846,21 +1262,74 @@
     /* ============================================================ */
     /* ⭐️ REVIEWS SYSTEM (FIREBASE FIRESTORE) */
     /* ============================================================ */
+    function getInitials(name) {
+      const clean = (name || '').trim();
+      if (!clean) return '?';
+      const parts = clean.split(/\s+/).filter(Boolean);
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+
+    function formatRelativeReviewDate(r) {
+      const ts = r.createdAt && typeof r.createdAt.toDate === 'function' ? r.createdAt.toDate() : null;
+      if (!ts) return r.date || '';
+
+      const diffMs = Date.now() - ts.getTime();
+      const diffDays = Math.floor(diffMs / 86400000);
+
+      if (diffDays <= 0) return 'Днес';
+      if (diffDays === 1) return 'Вчера';
+      if (diffDays < 7) return `Преди ${diffDays} дни`;
+      if (diffDays < 30) {
+        const weeks = Math.floor(diffDays / 7);
+        return `Преди ${weeks} ${weeks === 1 ? 'седмица' : 'седмици'}`;
+      }
+      return r.date || ts.toLocaleDateString('bg-BG');
+    }
+
+    function toggleReviewsSection() {
+      hapticTick(8);
+      const section = document.getElementById('reviews-section');
+      const chevron = document.getElementById('header-rating-chevron');
+      if (!section) return;
+
+      const isOpen = section.classList.toggle('is-open');
+      if (chevron) chevron.classList.toggle('is-open', isOpen);
+
+      if (isOpen) {
+        setTimeout(() => {
+          section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 80);
+      }
+    }
+
+    function updateHeaderRatingBadge(avgText, count) {
+      const textEl = document.getElementById('header-rating-text');
+      const countEl = document.getElementById('header-rating-count');
+      if (textEl) textEl.innerText = avgText;
+      if (countEl) countEl.innerText = `(${count})`;
+    }
+
     function renderReviews() {
-      const reviewsContainer = document.getElementById('reviews-list');
-      const badge = document.getElementById('avg-rating-badge');
-      if (!reviewsContainer) return;
+      const carousel = document.getElementById('reviews-carousel');
+      const badge = document.getElementById('avg-rating-badge-top');
+      if (!carousel) return;
 
       db.collection('reviews').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
         if (snapshot.empty) {
-          reviewsContainer.innerHTML = '<p class="text-xs text-white/40 text-center py-3">Все още няма отзиви. Бъдете първият!</p>';
-          if (badge) badge.innerText = '5.0 ★';
+          carousel.innerHTML = `
+            <div class="flex-shrink-0 w-full flex items-center justify-center gap-2 py-6 text-white/40 text-xs">
+              Все още няма отзиви — бъди първият!
+            </div>
+          `;
+          if (badge) badge.innerHTML = '<i data-lucide="star" class="w-3 h-3 fill-amber-400 text-amber-400"></i> Нов';
+          updateHeaderRatingBadge('5.0', 0);
+          lucide.createIcons();
           return;
         }
 
         let reviews = [];
         let totalStars = 0;
-
         snapshot.forEach(doc => {
           const r = doc.data();
           reviews.push(r);
@@ -868,41 +1337,76 @@
         });
 
         const avg = (totalStars / reviews.length).toFixed(1);
-        if (badge) badge.innerText = `${avg} ★ (${reviews.length})`;
+        if (badge) badge.innerHTML = `<i data-lucide="star" class="w-3 h-3 fill-amber-400 text-amber-400"></i> ${avg} · ${reviews.length}`;
+        updateHeaderRatingBadge(avg, reviews.length);
 
         let html = '';
-        reviews.forEach(r => {
-          const starsHtml = '★'.repeat(r.rating || 5) + '☆'.repeat(5 - (r.rating || 5));
+        reviews.forEach((r, i) => {
+          const rating = Math.min(Math.max(Number(r.rating) || 5, 1), 5);
+          const starsHtml = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+          const initials = getInitials(r.name);
+          const safeComment = (r.comment || '').replace(/</g, '&lt;');
           html += `
-            <div class="bg-[#000000] border border-[#262626] p-3 rounded-xl space-y-1 transition hover:border-white/20">
-              <div class="flex justify-between items-center">
-                <span class="text-xs font-bold text-white">${r.name || 'Клиент'}</span>
-                <span class="text-amber-400 text-xs tracking-wider font-mono">${starsHtml}</span>
+            <div class="review-card snap-start flex-shrink-0 w-[250px] bg-[#0d0d0d] border border-[#262626] rounded-2xl p-4 space-y-2.5 hover:border-white/20 transition" style="animation-delay:${Math.min(i, 6) * 0.05}s">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                  <div class="w-7 h-7 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">${initials}</div>
+                  <span class="text-xs font-bold text-white truncate">${r.name || 'Клиент'}</span>
+                </div>
+                <span class="text-amber-400 text-[11px] tracking-wider flex-shrink-0">${starsHtml}</span>
               </div>
-              <p class="text-[11px] text-white/70 leading-relaxed">${r.comment || ''}</p>
-              <span class="text-[9px] text-white/30 block text-right">${r.date || ''}</span>
+              <p class="text-[11px] text-white/70 leading-relaxed review-card-clamp">${safeComment}</p>
+              <p class="text-[9px] text-white/30">${formatRelativeReviewDate(r)}</p>
             </div>
           `;
         });
 
-        reviewsContainer.innerHTML = html;
+        html += `
+          <button onclick="openReviewModal()" class="snap-start flex-shrink-0 w-[140px] border border-dashed border-[#262626] hover:border-white/30 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 text-white/50 hover:text-white transition">
+            <i data-lucide="message-square-plus" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold text-center leading-tight">Напиши<br/>отзив</span>
+          </button>
+        `;
+
+        carousel.innerHTML = html;
+        lucide.createIcons();
       }, err => {
         console.error('Грешка при зареждане на отзиви:', err);
-        reviewsContainer.innerHTML = '<p class="text-xs text-red-400 text-center py-3">Грешка при зареждане на отзивите.</p>';
+        carousel.innerHTML = '<p class="text-xs text-red-400 py-6">Грешка при зареждане на отзивите.</p>';
       });
     }
 
     function openReviewModal() {
-      if (currentUser) {
-        db.collection('users').doc(currentUser.uid).get().then(doc => {
-          if (doc.exists && doc.data().name) {
-            document.getElementById('review-author').value = doc.data().name;
-          }
-        });
+      if (!currentUser) {
+        showCustomAlert('Вход е необходим', 'Моля, влез в профила си, за да оставиш отзив.');
+        openAuthModal();
+        return;
       }
-      setReviewRating(5);
-      document.getElementById('review-comment').value = '';
-      document.getElementById('review-modal').classList.remove('hidden');
+
+      const submitBtn = document.getElementById('review-submit-btn');
+
+      db.collection('reviews').doc(currentUser.uid).get().then(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          document.getElementById('review-author').value = data.name || '';
+          document.getElementById('review-comment').value = data.comment || '';
+          setReviewRating(data.rating || 5);
+          if (submitBtn) submitBtn.innerText = 'Обнови отзива';
+        } else {
+          document.getElementById('review-comment').value = '';
+          setReviewRating(5);
+          if (submitBtn) submitBtn.innerText = 'Публикувай отзива';
+          db.collection('users').doc(currentUser.uid).get().then(udoc => {
+            if (udoc.exists && udoc.data().name) {
+              document.getElementById('review-author').value = udoc.data().name;
+            }
+          }).catch(() => {});
+        }
+        document.getElementById('review-modal').classList.remove('hidden');
+      }).catch(err => {
+        console.error('Грешка при зареждане на отзива:', err);
+        document.getElementById('review-modal').classList.remove('hidden');
+      });
     }
 
     function closeReviewModal() {
@@ -924,7 +1428,14 @@
     }
 
     function submitReview() {
-      const name = document.getElementById('review-author').value.trim() || 'Анонимен Клиент';
+      if (!currentUser) {
+        closeReviewModal();
+        showCustomAlert('Вход е необходим', 'Моля, влез в профила си, за да оставиш отзив.');
+        openAuthModal();
+        return;
+      }
+
+      const name = document.getElementById('review-author').value.trim() || 'Клиент';
       const comment = document.getElementById('review-comment').value.trim();
 
       if (!comment) {
@@ -932,20 +1443,28 @@
         return;
       }
 
-      const newReview = {
-        name: name,
-        rating: selectedReviewRating,
-        comment: comment,
-        date: formatDateToString(new Date()),
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      };
+      const reviewRef = db.collection('reviews').doc(currentUser.uid);
+      reviewRef.get().then(doc => {
+        const isEdit = doc.exists;
+        const payload = {
+          name: name,
+          rating: selectedReviewRating,
+          comment: comment,
+          userId: currentUser.uid,
+          date: formatDateToString(new Date()),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        if (!isEdit) payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
 
-      db.collection('reviews').add(newReview).then(() => {
-        hapticTick([10, 30, 10]);
-        closeReviewModal();
-        showCustomAlert('Успех', 'Благодарим Ви! Вашият отзив беше публикуван успешно.', false);
+        reviewRef.set(payload, { merge: true }).then(() => {
+          hapticTick([10, 30, 10]);
+          closeReviewModal();
+          showCustomAlert('Успех', isEdit ? 'Отзивът ти беше обновен успешно.' : 'Благодарим ти! Отзивът беше публикуван успешно.', false);
+        }).catch(err => {
+          showCustomAlert('Грешка', 'Не успяхме да публикуваме отзива: ' + err.message);
+        });
       }).catch(err => {
-        showCustomAlert('Грешка', 'Не успяхме да публикуваме отзива: ' + err.message);
+        showCustomAlert('Грешка', 'Нещо се обърка: ' + err.message);
       });
     }
 
@@ -978,11 +1497,338 @@
         currentUser = user;
         updateHeaderAuthUI();
         updateStepIndicator();
+        updateLoyaltyCardVisibility();
         if (currentUser) {
           loadUserProfile();
         }
       });
     };
+
+    /* ============================================================ */
+    /* 🎟️ ЛОЯЛНА КАРТА (5 ПЕЧАТА = БЕЗПЛАТНА ПОДСТРИЖКА) */
+    /* ============================================================ */
+    function updateLoyaltyCardVisibility() {
+      if (!currentUser) {
+        if (loyaltyUnsubscribe) { loyaltyUnsubscribe(); loyaltyUnsubscribe = null; }
+        loyaltyPrevStamps = null;
+        closeLoyaltyCardModal();
+      }
+    }
+
+    function replayShine(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('play');
+      void el.offsetWidth; // force reflow so the sweep replays every time
+      el.classList.add('play');
+    }
+
+    let pendingLoyaltyStyle = 'space-black';
+    const LOYALTY_STYLES = [
+      { id: 'space-black', label: 'Space Black' },
+      { id: 'silver', label: 'Silver' },
+      { id: 'gold', label: 'Gold' }
+    ];
+
+    function renderStyleSwatches(containerId, currentStyle) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = LOYALTY_STYLES.map(s => `
+        <button type="button" onclick="pickLoyaltyStyle('${s.id}', '${containerId}')" data-style="${s.id}" class="loyalty-style-swatch${s.id === currentStyle ? ' selected' : ''}">
+          <div class="loyalty-style-preview style-${s.id}"></div>
+          <span>${s.label}</span>
+        </button>
+      `).join('');
+    }
+
+    function pickLoyaltyStyle(style, containerId) {
+      hapticTick(6);
+      const container = document.getElementById(containerId);
+      if (container) {
+        container.querySelectorAll('.loyalty-style-swatch').forEach(btn => {
+          btn.classList.toggle('selected', btn.dataset.style === style);
+        });
+      }
+
+      if (containerId === 'loyalty-setup-style-picker') {
+        pendingLoyaltyStyle = style;
+      } else {
+        // Директна смяна на стил за вече съществуваща карта
+        applyCardStyle(style);
+        if (currentUser) {
+          db.collection('loyaltyCards').doc(currentUser.uid).update({ cardStyle: style }).catch(() => {});
+        }
+      }
+    }
+
+    function applyCardStyle(style) {
+      const inner = document.getElementById('loyalty-card-inner');
+      if (!inner) return;
+      inner.classList.remove('style-space-black', 'style-silver', 'style-gold');
+      inner.classList.add(`style-${style || 'space-black'}`);
+    }
+
+    async function openLoyaltyCardModal() {
+      if (!currentUser) return;
+      hapticTick(10);
+      const modal = document.getElementById('loyalty-card-modal');
+      const sheet = document.getElementById('loyalty-sheet');
+      if (modal) modal.classList.remove('hidden');
+
+      if (sheet) {
+        sheet.classList.remove('loyalty-sheet');
+        void sheet.offsetWidth; // force reflow so the sheet slide-up replays every time
+        sheet.classList.add('loyalty-sheet');
+      }
+
+      try {
+        const doc = await db.collection('loyaltyCards').doc(currentUser.uid).get();
+        if (doc.exists) {
+          showLoyaltyCardView(doc.data());
+        } else {
+          showLoyaltyCardSetup();
+        }
+      } catch (err) {
+        console.error('Грешка при проверка на лоялна карта:', err);
+        showLoyaltyCardSetup();
+      }
+      lucide.createIcons();
+    }
+
+    function showLoyaltyCardSetup() {
+      document.getElementById('loyalty-setup-view')?.classList.remove('hidden');
+      document.getElementById('loyalty-card-view')?.classList.add('hidden');
+
+      pendingLoyaltyStyle = 'space-black';
+      renderStyleSwatches('loyalty-setup-style-picker', pendingLoyaltyStyle);
+
+      const nameInput = document.getElementById('loyalty-setup-name');
+      if (nameInput && !nameInput.value && currentUser && currentUser.displayName) {
+        nameInput.value = currentUser.displayName;
+      }
+    }
+
+    function showLoyaltyCardView(data) {
+      document.getElementById('loyalty-setup-view')?.classList.add('hidden');
+      document.getElementById('loyalty-card-view')?.classList.remove('hidden');
+
+      applyCardStyle(data.cardStyle || 'space-black');
+      renderStyleSwatches('loyalty-change-style-picker', data.cardStyle || 'space-black');
+      renderLoyaltyCard(data);
+
+      const inner = document.getElementById('loyalty-card-inner');
+      if (inner) {
+        inner.classList.remove('apple-card-pop');
+        void inner.offsetWidth;
+        inner.classList.add('apple-card-pop');
+      }
+      replayShine('loyalty-shine');
+      listenLoyaltyCard();
+    }
+
+    async function submitLoyaltyCardSetup() {
+      if (!currentUser) return;
+      const name = document.getElementById('loyalty-setup-name').value.trim();
+      const phone = document.getElementById('loyalty-setup-phone').value.trim();
+      if (!name || !phone) return showCustomAlert('Внимание', 'Моля попълнете име и телефонен номер!');
+
+      db.collection('users').doc(currentUser.uid).set({
+        name: name,
+        phone: phone,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true }).catch(() => {});
+
+      await ensureLoyaltyCard(currentUser, name, phone, pendingLoyaltyStyle);
+
+      try {
+        const doc = await db.collection('loyaltyCards').doc(currentUser.uid).get();
+        if (doc.exists) showLoyaltyCardView(doc.data());
+      } catch (err) {
+        console.error('Грешка при зареждане на новосъздадената карта:', err);
+      }
+      lucide.createIcons();
+    }
+
+    function closeLoyaltyCardModal() {
+      const modal = document.getElementById('loyalty-card-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    /* 🍔 СТРАНИЧНО МЕНЮ */
+    function openSideMenu() {
+      hapticTick(10);
+      document.getElementById('hamburger-btn')?.classList.add('is-open');
+      document.getElementById('side-menu-backdrop')?.classList.add('is-visible');
+      document.getElementById('side-menu-panel')?.classList.add('is-open');
+      document.body.style.overflow = 'hidden';
+      lucide.createIcons();
+    }
+
+    function closeSideMenu() {
+      document.getElementById('hamburger-btn')?.classList.remove('is-open');
+      document.getElementById('side-menu-backdrop')?.classList.remove('is-visible');
+      document.getElementById('side-menu-panel')?.classList.remove('is-open');
+      document.body.style.overflow = '';
+    }
+
+    function toggleSideMenu() {
+      const panel = document.getElementById('side-menu-panel');
+      if (panel && panel.classList.contains('is-open')) {
+        closeSideMenu();
+      } else {
+        openSideMenu();
+      }
+    }
+
+    async function generateUniqueLoyaltyCode() {
+      for (let i = 0; i < 8; i++) {
+        const code = String(Math.floor(1000 + Math.random() * 9000));
+        try {
+          const existing = await db.collection('loyaltyCards').where('code', '==', code).limit(1).get();
+          if (existing.empty) return code;
+        } catch (e) {
+          return code;
+        }
+      }
+      return String(Math.floor(1000 + Math.random() * 9000));
+    }
+
+    async function ensureLoyaltyCard(user, overrideName, overridePhone, overrideStyle) {
+      const authUser = user || currentUser;
+      if (!authUser) return;
+      const cardRef = db.collection('loyaltyCards').doc(authUser.uid);
+
+      try {
+        let name = overrideName || authUser.displayName || '';
+        let phone = overridePhone || '';
+        const style = overrideStyle || 'space-black';
+
+        if (!overrideName || !overridePhone) {
+          try {
+            const userDoc = await db.collection('users').doc(authUser.uid).get();
+            if (userDoc.exists) {
+              const data = userDoc.data();
+              if (!overrideName) name = data.name || name;
+              if (!overridePhone) phone = data.phone || phone;
+            }
+          } catch (e) {}
+        }
+
+        // Генерираме кандидат-код ПРЕДИ транзакцията (изисква отделна заявка,
+        // която не може да стои вътре в транзакцията). Самата транзакция
+        // после гарантира, че картата на този потребител се създава само
+        // веднъж, дори ако две паралелни извиквания се случат едновременно.
+        const code = await generateUniqueLoyaltyCode();
+
+        await db.runTransaction(async (transaction) => {
+          const doc = await transaction.get(cardRef);
+          if (!doc.exists) {
+            transaction.set(cardRef, {
+              userId: authUser.uid,
+              clientEmail: authUser.email || '',
+              clientName: name,
+              clientPhone: phone,
+              code: code,
+              cardStyle: style,
+              stamps: 0,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          } else if (overrideName || overridePhone || overrideStyle) {
+            // Картата вече съществува — само обновяваме полетата, за които имаме по-свежи данни
+            const updates = {};
+            if (overrideName) updates.clientName = overrideName;
+            if (overridePhone) updates.clientPhone = overridePhone;
+            if (overrideStyle) updates.cardStyle = overrideStyle;
+            transaction.update(cardRef, updates);
+          }
+        });
+      } catch (err) {
+        console.error('Грешка при създаване на лоялна карта:', err);
+      }
+      listenLoyaltyCard();
+    }
+
+    function listenLoyaltyCard() {
+      if (!currentUser) return;
+      if (loyaltyUnsubscribe) loyaltyUnsubscribe();
+      loyaltyPrevStamps = null;
+
+      loyaltyUnsubscribe = db.collection('loyaltyCards').doc(currentUser.uid).onSnapshot(doc => {
+        if (!doc.exists) return;
+        const data = doc.data();
+        applyCardStyle(data.cardStyle || 'space-black');
+        renderLoyaltyCard(data);
+
+        const stamps = Math.min(Number(data.stamps) || 0, 5);
+        if (loyaltyPrevStamps !== null && loyaltyPrevStamps < 5 && stamps >= 5) {
+          openLoyaltyRewardModal();
+        }
+        loyaltyPrevStamps = stamps;
+      }, err => console.error('Грешка при зареждане на лоялна карта:', err));
+    }
+
+    function renderLoyaltyCard(data) {
+      const grid = document.getElementById('loyalty-stamps-grid');
+      const statusText = document.getElementById('loyalty-status-text');
+      const codeDisplay = document.getElementById('loyalty-code-display');
+      const heroCount = document.getElementById('loyalty-hero-count');
+      if (!grid || !statusText || !codeDisplay || !heroCount) return;
+
+      const stamps = Math.min(Number(data.stamps) || 0, 5);
+
+      heroCount.innerText = stamps;
+
+      grid.innerHTML = '';
+      for (let i = 0; i < 5; i++) {
+        const filled = i < stamps;
+        const dot = document.createElement('div');
+        dot.className = `apple-stamp-dot${filled ? ' filled' : ''}`;
+        grid.appendChild(dot);
+      }
+
+      if (stamps >= 5) {
+        statusText.innerHTML = '<span class="text-white font-bold">Готово за безплатна подстрижка</span>';
+      } else {
+        statusText.innerText = `Остават ${5 - stamps} до безплатна подстрижка`;
+      }
+
+      codeDisplay.innerText = data.code || '----';
+    }
+
+    function openLoyaltyRewardModal() {
+      hapticTick([10, 40, 15, 40, 15]);
+      const modal = document.getElementById('loyalty-reward-modal');
+      if (modal) modal.classList.remove('hidden');
+      spawnLoyaltyConfetti();
+      lucide.createIcons();
+    }
+
+    function closeLoyaltyRewardModal() {
+      const modal = document.getElementById('loyalty-reward-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function spawnLoyaltyConfetti() {
+      const container = document.getElementById('loyalty-confetti');
+      if (!container) return;
+      container.innerHTML = '';
+      const bits = ['#10b981', '#34d399', '#ffffff', '#6ee7b7'];
+      const shapes = ['50%', '2px'];
+      for (let i = 0; i < 20; i++) {
+        const bit = document.createElement('span');
+        const size = 5 + Math.random() * 4;
+        bit.className = 'confetti-bit';
+        bit.style.left = `${5 + Math.random() * 90}%`;
+        bit.style.width = `${size}px`;
+        bit.style.height = `${size}px`;
+        bit.style.background = bits[Math.floor(Math.random() * bits.length)];
+        bit.style.borderRadius = shapes[Math.floor(Math.random() * shapes.length)];
+        bit.style.animationDelay = `${Math.random() * 0.3}s`;
+        bit.style.animationDuration = `${0.9 + Math.random() * 0.6}s`;
+        container.appendChild(bit);
+      }
+      setTimeout(() => { container.innerHTML = ''; }, 1800);
+    }
 
     function loadSettingsAndDaysOff() {
       db.collection('settings').doc('schedule').onSnapshot(doc => {
@@ -1020,6 +1866,23 @@
           const phoneInput = document.getElementById('client-phone');
           if (nameInput && data.name) nameInput.value = data.name;
           if (phoneInput && data.phone) phoneInput.value = data.phone;
+
+          // Самолечение: ако лоялната карта вече съществува, но е останала
+          // без име/телефон (напр. заради стар race condition при регистрация),
+          // я допълваме тук — само липсващите полета, без да презаписваме нищо друго.
+          if (data.name || data.phone) {
+            const cardRef = db.collection('loyaltyCards').doc(currentUser.uid);
+            cardRef.get().then(cardDoc => {
+              if (!cardDoc.exists) return; // не създаваме непълна карта тук
+              const cardData = cardDoc.data();
+              const updates = {};
+              if (data.name && !cardData.clientName) updates.clientName = data.name;
+              if (data.phone && !cardData.clientPhone) updates.clientPhone = data.phone;
+              if (Object.keys(updates).length > 0) {
+                cardRef.update(updates).catch(() => {});
+              }
+            }).catch(() => {});
+          }
         }
       }).catch(err => console.log('Грешка при зареждане на профил:', err));
     }
@@ -1028,17 +1891,15 @@
       const container = document.getElementById('auth-header-container');
       const clientForm = document.getElementById('client-form');
       const loginReqMsg = document.getElementById('login-required-msg');
+      closeSideMenu();
 
       if (currentUser) {
         container.innerHTML = `
-          <div class="flex items-center gap-2">
-            <button onclick="openMyAppointmentsModal()" class="text-xs bg-[#000000] hover:bg-[#141414] text-white py-2 px-3.5 rounded-xl border border-[#262626] transition flex items-center gap-1.5 font-bold">
-              <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#e1e1e1]"></i> Часове
-            </button>
-            <button onclick="logoutUser()" class="text-xs bg-[#000000] hover:bg-[#141414] text-red-400 py-2 px-3 rounded-xl border border-[#262626] transition font-semibold">
-              Изход
-            </button>
-          </div>
+          <button onclick="toggleSideMenu()" id="hamburger-btn" class="hamburger-btn" aria-label="Меню">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+          </button>
         `;
         if (selectedTime) clientForm.classList.remove('hidden');
         loginReqMsg.classList.add('hidden');
@@ -1082,8 +1943,12 @@
       if (!email || !password) return showCustomAlert('Внимание', 'Попълнете имейл и парола!');
 
       if (isRegisterMode) {
-        auth.createUserWithEmailAndPassword(email, password).then(() => {
+        auth.createUserWithEmailAndPassword(email, password).then(cred => {
           closeAuthModal();
+          db.collection('users').doc(cred.user.uid).set({
+            email: email,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true }).catch(() => {});
         }).catch(err => showCustomAlert('Грешка при регистрация', err.message));
       } else {
         auth.signInWithEmailAndPassword(email, password).then(() => {
@@ -1303,20 +2168,43 @@
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
 
+      // Синхронизираме името/телефона и в лоялната карта, за да няма "Без име" в админ панела
+      ensureLoyaltyCard(currentUser, name, phone);
+
+      const bookingDate = selectedDate;
+      const bookingTime = selectedTime;
+
       const newBooking = {
         userId: currentUser.uid,
         clientEmail: currentUser.email || '',
         clientName: name,
         clientPhone: phone,
-        date: selectedDate,
-        time: selectedTime,
+        date: bookingDate,
+        time: bookingTime,
         status: 'pending',
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
 
-      db.collection('bookings').add(newBooking).then(() => {
+      // 🔒 ЗАЩИТА ОТ ДВОЙНИ РЕЗЕРВАЦИИ: проверката "свободен ли е часът" и
+      // самото записване стават атомарно в една транзакция. Ако двама клиенти
+      // натиснат "Потвърди" за един и същ час едновременно, само единият ще
+      // успее — другият получава ясно съобщение и списъкът се обновява.
+      const conflictQuery = db.collection('bookings')
+        .where('date', '==', bookingDate)
+        .where('time', '==', bookingTime);
+
+      db.runTransaction(transaction => {
+        return transaction.get(conflictQuery).then(snapshot => {
+          const isTaken = snapshot.docs.some(doc => doc.data().status !== 'cancelled');
+          if (isTaken) {
+            throw new Error('SLOT_TAKEN');
+          }
+          const bookingRef = db.collection('bookings').doc();
+          transaction.set(bookingRef, newBooking);
+        });
+      }).then(() => {
         hapticTick([10, 40, 15]);
-        document.getElementById('success-modal-desc').innerText = `Успешно запазен час за ${selectedDate} в ${selectedTime}.`;
+        document.getElementById('success-modal-desc').innerText = `Успешно запазен час за ${bookingDate} в ${bookingTime}.`;
         document.getElementById('success-modal').classList.remove('hidden');
         spawnSuccessConfetti();
 
@@ -1326,7 +2214,16 @@
       }).catch(err => {
         btn.disabled = false;
         btn.innerHTML = '<i data-lucide="check-circle-2" class="w-4 h-4"></i> <span id="confirm-booking-btn-text">Потвърди резервацията</span>';
-        showCustomAlert('Грешка', 'Не успяхме да запазим часа: ' + err.message);
+        lucide.createIcons();
+
+        if (err.message === 'SLOT_TAKEN') {
+          showCustomAlert('Часът вече е зает', 'За съжаление друг клиент току-що запази точно този час. Моля, избери друг свободен час от списъка.');
+          selectedTime = '';
+          fetchTimeSlots();
+          updateStepIndicator();
+        } else {
+          showCustomAlert('Грешка', 'Не успяхме да запазим часа: ' + err.message);
+        }
       });
     }
 
