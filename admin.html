@@ -154,6 +154,32 @@
       </button>
     </div>
 
+    <!-- Карти за лоялност -->
+    <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4 border-l-4 border-l-emerald-500">
+      <h2 id="txt-loyalty-title" class="text-sm font-bold uppercase text-white tracking-wider flex items-center gap-2">
+        <i data-lucide="gift" class="w-4 h-4 text-emerald-400"></i> Карти за лоялност
+      </h2>
+
+      <div class="flex gap-2">
+        <input type="text" id="loyalty-code-input" maxlength="4" inputmode="numeric" pattern="[0-9]*"
+               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4);"
+               placeholder="0000"
+               class="w-28 bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-center text-lg tracking-widest text-white focus:outline-none focus:border-emerald-500" />
+        <button onclick="searchLoyaltyByCode()" id="txt-loyalty-search-btn" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-black font-bold px-4 py-2.5 rounded-xl text-xs transition">
+          Намери карта по код
+        </button>
+      </div>
+
+      <div id="loyalty-search-result"></div>
+
+      <div class="pt-3 border-t border-zinc-800 space-y-2">
+        <h3 id="txt-loyalty-all-title" class="text-xs font-bold uppercase text-zinc-400 tracking-wider">Всички карти</h3>
+        <div id="loyalty-cards-list" class="divide-y divide-zinc-800/60 space-y-2">
+          <p id="txt-loyalty-loading" class="text-xs text-zinc-500 text-center py-4">Зареждане...</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Активни запазени часове -->
     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl space-y-4">
       <div class="flex justify-between items-center">
@@ -208,6 +234,8 @@
       sunCleanDuration: 5
     };
     let currentDaysOff = [];
+    let loyaltyCards = [];
+    let currentLoyaltySearchId = null;
 
     const translations = {
       bg: {
@@ -257,7 +285,27 @@
         alertSaved: "Настройките бяха обновени успешно!",
         alertSelectDate: "Изберете дата от календара!",
         alertFillManual: "Моля, попълнете име, телефон, дата и час!",
-        alertBookingAdded: "Часът е добавен успешно и вече е отбелязан като зает!"
+        alertBookingAdded: "Часът е добавен успешно и вече е отбелязан като зает!",
+        alertSlotTaken: "Точно в този момент часът беше зает от друга резервация. Моля, изберете друг свободен час.",
+        loyaltyTitle: "Карти за лоялност",
+        loyaltySearchBtn: "Намери карта по код",
+        loyaltyAllTitle: "Всички карти",
+        loyaltyLoading: "Зареждане...",
+        loyaltyNoCards: "Все още няма създадени карти за лоялност.",
+        loyaltyGiveStampBtn: "Дай печат",
+        loyaltyResetBtn: "Подстригах безплатно",
+        loyaltyLockedBtn: "Заключено (не са 5/5)",
+        loyaltyVoidBtn: "Анулирай картата",
+        loyaltyAlreadyRedeemedBtn: "Вече отбелязано ✓",
+        loyaltyStampsLabel: "печата",
+        loyaltyCodeLabel: "Код",
+        loyaltyInvalidCode: "Въведете валиден 4-цифрен код!",
+        loyaltyNotFound: "Няма карта с такъв код.",
+        loyaltyConfirmReset: "Сигурни ли сте, че искате да отбележите тази подстрижка като безплатна? Картата ОСТАВА на 5/5 — нулирате я отделно с бутона 'Анулирай картата', когато решите.",
+        loyaltyConfirmVoid: "Сигурни ли сте, че искате да анулирате картата? Печатите ще се нулират на 0 и клиентът ще може отново да събира печати.",
+        loyaltyDeleteBtn: "Изтрий картата",
+        loyaltyConfirmDelete: "ВНИМАНИЕ: Това ще изтрие картата ПЕРМАНЕНТНО (заедно с печатите, кода и историята ѝ). Използвайте само за дублирани/изоставени карти, например когато клиент си направи нов профил. Това действие не може да бъде отменено. Сигурни ли сте?",
+        noNamePlaceholder: "Без име"
       },
       es: {
         pageTitle: "SG Forge - Panel Administrativo",
@@ -306,7 +354,27 @@
         alertSaved: "¡Las configuraciones se actualizaron con éxito!",
         alertSelectDate: "¡Selecciona una fecha del calendario!",
         alertFillManual: "¡Por favor complete el nombre, teléfono, fecha y hora!",
-        alertBookingAdded: "¡Cita añadida con éxito y marcada como ocupada!"
+        alertBookingAdded: "¡Cita añadida con éxito y marcada como ocupada!",
+        alertSlotTaken: "Justo en este momento la hora fue ocupada por otra reserva. Por favor, elige otra hora libre.",
+        loyaltyTitle: "Tarjetas de fidelidad",
+        loyaltySearchBtn: "Buscar tarjeta por código",
+        loyaltyAllTitle: "Todas las tarjetas",
+        loyaltyLoading: "Cargando...",
+        loyaltyNoCards: "Aún no hay tarjetas de fidelidad creadas.",
+        loyaltyGiveStampBtn: "Dar sello",
+        loyaltyResetBtn: "Corte gratis realizado",
+        loyaltyLockedBtn: "Bloqueado (no 5/5)",
+        loyaltyVoidBtn: "Anular tarjeta",
+        loyaltyAlreadyRedeemedBtn: "Ya marcado ✓",
+        loyaltyStampsLabel: "sellos",
+        loyaltyCodeLabel: "Código",
+        loyaltyInvalidCode: "¡Introduce un código válido de 4 dígitos!",
+        loyaltyNotFound: "No hay ninguna tarjeta con ese código.",
+        loyaltyConfirmReset: "¿Seguro que quieres marcar este corte como gratis? La tarjeta SE QUEDA en 5/5 — la reinicias por separado con el botón 'Anular tarjeta' cuando quieras.",
+        loyaltyConfirmVoid: "¿Seguro que quieres anular la tarjeta? Los sellos se reiniciarán a 0 y el cliente podrá volver a acumular sellos.",
+        loyaltyDeleteBtn: "Eliminar tarjeta",
+        loyaltyConfirmDelete: "ATENCIÓN: Esto eliminará la tarjeta PERMANENTEMENTE (junto con sus sellos, código e historial). Úsalo solo para tarjetas duplicadas o abandonadas, por ejemplo cuando un cliente crea un perfil nuevo. Esta acción no se puede deshacer. ¿Estás seguro?",
+        noNamePlaceholder: "Sin nombre"
       }
     };
 
@@ -319,6 +387,11 @@
       loadDaysOff();
       renderBookingsAndStats();
       updateManualAvailableSlots();
+      renderLoyaltyCardsList();
+      if (currentLoyaltySearchId) {
+        const card = loyaltyCards.find(c => c.id === currentLoyaltySearchId);
+        if (card) renderLoyaltySearchResult(card);
+      }
     }
 
     function applyTranslations() {
@@ -358,6 +431,12 @@
       document.getElementById('txt-active-bookings-title').innerHTML = `<i data-lucide="calendar" class="w-4 h-4 text-emerald-400"></i> ${t.activeBookingsTitle}`;
       document.getElementById('txt-client-stats-title').innerHTML = `<i data-lucide="users" class="w-4 h-4 text-zinc-400"></i> ${t.clientStatsTitle}`;
 
+      document.getElementById('txt-loyalty-title').innerHTML = `<i data-lucide="gift" class="w-4 h-4 text-emerald-400"></i> ${t.loyaltyTitle}`;
+      document.getElementById('txt-loyalty-search-btn').innerText = t.loyaltySearchBtn;
+      document.getElementById('txt-loyalty-all-title').innerText = t.loyaltyAllTitle;
+      const loadingEl = document.getElementById('txt-loyalty-loading');
+      if (loadingEl) loadingEl.innerText = t.loyaltyLoading;
+
       lucide.createIcons();
     }
 
@@ -390,6 +469,7 @@
       loadSettings();
       loadDaysOff();
       listenToRealtimeBookingsAndStats();
+      listenToLoyaltyCards();
     }
 
     function listenToRealtimeBookingsAndStats() {
@@ -579,14 +659,28 @@
         return;
       }
 
-      db.collection('bookings').add({
-        clientName,
-        clientPhone,
-        date,
-        time,
-        clientEmail,
-        status: 'pending',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      // 🔒 Същата защита от двойни резервации, както при клиента.
+      const conflictQuery = db.collection('bookings')
+        .where('date', '==', date)
+        .where('time', '==', time);
+
+      db.runTransaction(transaction => {
+        return transaction.get(conflictQuery).then(snapshot => {
+          const isTaken = snapshot.docs.some(doc => doc.data().status !== 'cancelled');
+          if (isTaken) {
+            throw new Error('SLOT_TAKEN');
+          }
+          const bookingRef = db.collection('bookings').doc();
+          transaction.set(bookingRef, {
+            clientName,
+            clientPhone,
+            date,
+            time,
+            clientEmail,
+            status: 'pending',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        });
       }).then(() => {
         alert(t.alertBookingAdded);
         document.getElementById('manual-client-name').value = '';
@@ -594,7 +688,13 @@
         document.getElementById('manual-date').value = '';
         document.getElementById('manual-time-select').innerHTML = `<option value="">${t.selectDateFirst}</option>`;
         document.getElementById('manual-client-email').value = '';
-      }).catch(err => alert('Грешка: ' + err.message));
+      }).catch(err => {
+        if (err.message === 'SLOT_TAKEN') {
+          alert(t.alertSlotTaken);
+        } else {
+          alert('Грешка: ' + err.message);
+        }
+      });
     }
 
     function loadSettings() {
@@ -693,6 +793,206 @@
         span.innerHTML = `${d} <button onclick="removeDayOff('${d}')" class="text-red-400 hover:text-red-300 ml-1">&times;</button>`;
         container.appendChild(span);
       });
+    }
+
+    /* ============================================================ */
+    /* 🎟️ КАРТИ ЗА ЛОЯЛНОСТ (АДМИН КОНТРОЛ) */
+    /* ============================================================ */
+    function listenToLoyaltyCards() {
+      db.collection('loyaltyCards').onSnapshot(snapshot => {
+        loyaltyCards = [];
+        snapshot.forEach(doc => {
+          loyaltyCards.push({ id: doc.id, ...doc.data() });
+        });
+        loyaltyCards.sort((a, b) => {
+          const stampsDiff = (Number(b.stamps) || 0) - (Number(a.stamps) || 0);
+          if (stampsDiff !== 0) return stampsDiff;
+          return (a.clientName || '').localeCompare(b.clientName || '');
+        });
+        renderLoyaltyCardsList();
+        if (currentLoyaltySearchId) {
+          const updated = loyaltyCards.find(c => c.id === currentLoyaltySearchId);
+          if (updated) renderLoyaltySearchResult(updated);
+        }
+      }, err => console.error('Грешка при зареждане на карти за лоялност:', err));
+    }
+
+    function renderStampDots(stamps) {
+      const s = Math.min(Number(stamps) || 0, 5);
+      let html = '<div class="flex gap-1">';
+      for (let i = 0; i < 5; i++) {
+        html += `<span class="w-3.5 h-3.5 rounded-full border ${i < s ? 'bg-emerald-400 border-emerald-400' : 'bg-transparent border-zinc-700'}"></span>`;
+      }
+      html += '</div>';
+      return html;
+    }
+
+    function renderRedeemButtonHtml(card, sizePadding) {
+      const t = translations[currentLang];
+      const stamps = Math.min(Number(card.stamps) || 0, 5);
+
+      if (stamps < 5) {
+        return `<button disabled class="w-full sm:w-auto flex items-center justify-center gap-1 opacity-40 cursor-not-allowed bg-zinc-800 text-zinc-500 border border-zinc-700 font-bold ${sizePadding} rounded-lg transition">
+          <i data-lucide="lock" class="w-3 h-3"></i> ${t.loyaltyLockedBtn}
+        </button>`;
+      }
+      if (card.redeemed) {
+        return `<button disabled class="w-full sm:w-auto flex items-center justify-center gap-1 opacity-60 cursor-not-allowed bg-zinc-800 text-emerald-400/70 border border-zinc-700 font-bold ${sizePadding} rounded-lg transition">
+          <i data-lucide="check" class="w-3 h-3"></i> ${t.loyaltyAlreadyRedeemedBtn}
+        </button>`;
+      }
+      return `<button onclick="resetLoyaltyCard('${card.id}')" class="w-full sm:w-auto flex items-center justify-center gap-1 bg-emerald-500 hover:bg-emerald-600 text-black border border-emerald-500 font-bold ${sizePadding} rounded-lg transition">
+        <i data-lucide="gift" class="w-3 h-3"></i> ${t.loyaltyResetBtn}
+      </button>`;
+    }
+
+    function renderLoyaltyCardsList() {
+      const t = translations[currentLang];
+      const container = document.getElementById('loyalty-cards-list');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (loyaltyCards.length === 0) {
+        container.innerHTML = `<p class="text-xs text-zinc-500 text-center py-4">${t.loyaltyNoCards}</p>`;
+        return;
+      }
+
+      loyaltyCards.forEach(card => {
+        const stamps = Math.min(Number(card.stamps) || 0, 5);
+        const div = document.createElement('div');
+        div.className = 'pt-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs';
+        div.innerHTML = `
+          <div class="space-y-1.5 w-full sm:w-auto">
+            <div class="flex items-center justify-between gap-2">
+              <p class="font-bold text-white text-sm">${card.clientName || t.noNamePlaceholder} <span class="text-zinc-500 font-normal">(${card.clientPhone || '—'})</span></p>
+              <button onclick="deleteLoyaltyCard('${card.id}')" title="${t.loyaltyDeleteBtn}" class="flex-shrink-0 w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 flex items-center justify-center transition">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+            <p class="text-[10px] text-zinc-500">${t.loyaltyCodeLabel}: <span class="font-mono text-emerald-400 font-bold tracking-widest">${card.code || '----'}</span></p>
+            ${renderStampDots(card.stamps)}
+          </div>
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <button onclick="giveStamp('${card.id}')" ${stamps >= 5 ? 'disabled' : ''} class="w-full sm:w-auto ${stamps >= 5 ? 'opacity-40 cursor-not-allowed' : ''} bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 font-bold px-3 py-1.5 rounded-lg transition">
+              ${t.loyaltyGiveStampBtn} (${stamps}/5)
+            </button>
+            ${renderRedeemButtonHtml(card, 'px-3 py-1.5')}
+            <button onclick="voidLoyaltyCard('${card.id}')" class="w-full sm:w-auto bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-3 py-1.5 rounded-lg transition">
+              ${t.loyaltyVoidBtn}
+            </button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      lucide.createIcons();
+    }
+
+    function searchLoyaltyByCode() {
+      const t = translations[currentLang];
+      const code = document.getElementById('loyalty-code-input').value.trim();
+      const resultContainer = document.getElementById('loyalty-search-result');
+
+      if (!code || code.length !== 4) {
+        currentLoyaltySearchId = null;
+        resultContainer.innerHTML = `<p class="text-xs text-red-400 text-center py-2">${t.loyaltyInvalidCode}</p>`;
+        return;
+      }
+
+      const found = loyaltyCards.find(c => c.code === code);
+      if (!found) {
+        currentLoyaltySearchId = null;
+        resultContainer.innerHTML = `<p class="text-xs text-red-400 text-center py-2">${t.loyaltyNotFound}</p>`;
+        return;
+      }
+
+      currentLoyaltySearchId = found.id;
+      renderLoyaltySearchResult(found);
+    }
+
+    function renderLoyaltySearchResult(card) {
+      const t = translations[currentLang];
+      const resultContainer = document.getElementById('loyalty-search-result');
+      if (!resultContainer) return;
+
+      const stamps = Math.min(Number(card.stamps) || 0, 5);
+      resultContainer.innerHTML = `
+        <div class="bg-zinc-950 border border-emerald-500/30 rounded-xl p-3 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <p class="font-bold text-white text-sm">${card.clientName || t.noNamePlaceholder} <span class="text-zinc-500 font-normal">(${card.clientPhone || '—'})</span></p>
+            <button onclick="deleteLoyaltyCard('${card.id}')" title="${t.loyaltyDeleteBtn}" class="flex-shrink-0 w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 flex items-center justify-center transition">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+          ${renderStampDots(card.stamps)}
+          <p class="text-xs text-zinc-400">${stamps} / 5 ${t.loyaltyStampsLabel}</p>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <button onclick="giveStamp('${card.id}')" ${stamps >= 5 ? 'disabled' : ''} class="w-full sm:w-auto ${stamps >= 5 ? 'opacity-40 cursor-not-allowed' : ''} bg-emerald-500 hover:bg-emerald-600 text-black font-bold px-3 py-2 rounded-lg transition text-xs">
+              ${t.loyaltyGiveStampBtn}
+            </button>
+            ${renderRedeemButtonHtml(card, 'px-3 py-2 text-xs')}
+            <button onclick="voidLoyaltyCard('${card.id}')" class="w-full sm:w-auto bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold px-3 py-2 rounded-lg transition text-xs">
+              ${t.loyaltyVoidBtn}
+            </button>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function giveStamp(cardId) {
+      const card = loyaltyCards.find(c => c.id === cardId);
+      if (!card) return;
+      const current = Math.min(Number(card.stamps) || 0, 5);
+      if (current >= 5) return;
+
+      db.collection('loyaltyCards').doc(cardId).update({
+        stamps: current + 1,
+        lastStampAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch(err => alert('Грешка: ' + err.message));
+    }
+
+    function resetLoyaltyCard(cardId) {
+      const t = translations[currentLang];
+      const card = loyaltyCards.find(c => c.id === cardId);
+      if (!card) return;
+      const current = Math.min(Number(card.stamps) || 0, 5);
+      if (current < 5) return; // заключено докато не са събрани 5/5 печата
+      if (card.redeemed) return; // вече е отбелязано - изчаква анулиране
+
+      if (!confirm(t.loyaltyConfirmReset)) return;
+
+      db.collection('loyaltyCards').doc(cardId).update({
+        redeemed: true,
+        redeemedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        totalRedeemed: firebase.firestore.FieldValue.increment(1)
+      }).catch(err => alert('Грешка: ' + err.message));
+    }
+
+    function voidLoyaltyCard(cardId) {
+      const t = translations[currentLang];
+      if (!confirm(t.loyaltyConfirmVoid)) return;
+
+      db.collection('loyaltyCards').doc(cardId).update({
+        stamps: 0,
+        redeemed: false,
+        voidedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch(err => alert('Грешка: ' + err.message));
+    }
+
+    function deleteLoyaltyCard(cardId) {
+      const t = translations[currentLang];
+      if (!confirm(t.loyaltyConfirmDelete)) return;
+
+      db.collection('loyaltyCards').doc(cardId).delete().then(() => {
+        if (currentLoyaltySearchId === cardId) {
+          currentLoyaltySearchId = null;
+          const resultContainer = document.getElementById('loyalty-search-result');
+          if (resultContainer) resultContainer.innerHTML = '';
+          const codeInput = document.getElementById('loyalty-code-input');
+          if (codeInput) codeInput.value = '';
+        }
+      }).catch(err => alert('Грешка: ' + err.message));
     }
 
     lucide.createIcons();
