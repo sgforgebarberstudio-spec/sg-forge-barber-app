@@ -600,9 +600,29 @@
       const breakStartMin = activeBreakStart ? timeToMins(activeBreakStart) : null;
       const breakEndMin = activeBreakEnd ? timeToMins(activeBreakEnd) : null;
 
+      // Нормализираме часа, за да няма разминаване между "10:00" и
+      // стойности, записани в различен формат във Firestore.
+      const normalizeBookingTime = value => {
+        if (typeof value === 'string') {
+          const match = value.match(/(\d{1,2}):(\d{2})/);
+          return match ? `${match[1].padStart(2, '0')}:${match[2]}` : '';
+        }
+        if (value && typeof value === 'object') {
+          if (typeof value.toDate === 'function') {
+            const d = value.toDate();
+            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+          }
+          if (typeof value.hours === 'number' && typeof value.minutes === 'number') {
+            return `${String(value.hours).padStart(2, '0')}:${String(value.minutes).padStart(2, '0')}`;
+          }
+        }
+        return '';
+      };
+
       const bookedTimes = globalItems
-        .filter(item => item.date === dateVal && (!item.status || item.status === 'pending' || item.status === 'attended'))
-        .map(item => item.time);
+        .filter(item => item.date === dateVal && item.status !== 'cancelled')
+        .map(item => normalizeBookingTime(item.time))
+        .filter(Boolean);
 
       let generatedSlots = [];
       for (let m = startMin; m + activeServiceDur <= endMin; m += slotStep) {
@@ -659,19 +679,17 @@
         return;
       }
 
-      // 🔒 Същата защита от двойни резервации, както при клиента.
-      const conflictQuery = db.collection('bookings')
+      // transaction.get() в compat SDK приема DocumentReference, не Query.
+      // Проверяваме заявката отделно, преди да добавим резервацията.
+      db.collection('bookings')
         .where('date', '==', date)
-        .where('time', '==', time);
-
-      db.runTransaction(transaction => {
-        return transaction.get(conflictQuery).then(snapshot => {
+        .where('time', '==', time)
+        .get()
+        .then(snapshot => {
           const isTaken = snapshot.docs.some(doc => doc.data().status !== 'cancelled');
-          if (isTaken) {
-            throw new Error('SLOT_TAKEN');
-          }
-          const bookingRef = db.collection('bookings').doc();
-          transaction.set(bookingRef, {
+          if (isTaken) throw new Error('SLOT_TAKEN');
+
+          return db.collection('bookings').add({
             clientName,
             clientPhone,
             date,
@@ -680,21 +698,24 @@
             status: 'pending',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
           });
+        })
+        .then(() => {
+          alert(t.alertBookingAdded);
+          document.getElementById('manual-client-name').value = '';
+          document.getElementById('manual-client-phone').value = '';
+          document.getElementById('manual-date').value = '';
+          document.getElementById('manual-time-select').innerHTML = `<option value="">${t.selectDateFirst}</option>`;
+          document.getElementById('manual-client-email').value = '';
+        })
+        .catch(err => {
+          if (err.message === 'SLOT_TAKEN') {
+            updateManualAvailableSlots();
+            alert(t.alertSlotTaken);
+          } else {
+            console.error('Грешка при ръчно добавяне на резервация:', err);
+            alert('Грешка: ' + err.message);
+          }
         });
-      }).then(() => {
-        alert(t.alertBookingAdded);
-        document.getElementById('manual-client-name').value = '';
-        document.getElementById('manual-client-phone').value = '';
-        document.getElementById('manual-date').value = '';
-        document.getElementById('manual-time-select').innerHTML = `<option value="">${t.selectDateFirst}</option>`;
-        document.getElementById('manual-client-email').value = '';
-      }).catch(err => {
-        if (err.message === 'SLOT_TAKEN') {
-          alert(t.alertSlotTaken);
-        } else {
-          alert('Грешка: ' + err.message);
-        }
-      });
     }
 
     function loadSettings() {
