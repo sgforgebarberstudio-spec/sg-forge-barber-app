@@ -2193,15 +2193,14 @@
         .where('date', '==', bookingDate)
         .where('time', '==', bookingTime);
 
-      db.runTransaction(transaction => {
-        return transaction.get(conflictQuery).then(snapshot => {
-          const isTaken = snapshot.docs.some(doc => doc.data().status !== 'cancelled');
-          if (isTaken) {
-            throw new Error('SLOT_TAKEN');
-          }
-          const bookingRef = db.collection('bookings').doc();
-          transaction.set(bookingRef, newBooking);
-        });
+      // Firestore transactions support reading document references, not Query objects.
+      // Check the selected slot with a normal query, then create the booking.
+      conflictQuery.get().then(snapshot => {
+        const isTaken = snapshot.docs.some(doc => doc.data().status !== 'cancelled');
+        if (isTaken) {
+          throw new Error('SLOT_TAKEN');
+        }
+        return db.collection('bookings').add(newBooking);
       }).then(() => {
         hapticTick([10, 40, 15]);
         document.getElementById('success-modal-desc').innerText = `Успешно запазен час за ${bookingDate} в ${bookingTime}.`;
